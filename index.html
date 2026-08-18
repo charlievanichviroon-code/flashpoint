@@ -1,0 +1,1924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Flashpoint — Daily Chronology Puzzle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Palette sampled directly from an Outlier.land recording: warm cream base,
+       thick black outlines, mustard-yellow + lavender-purple + coral-red as the
+       three functional accents (purple reads "correct", not green). */
+    --bg: #FBF6E9;
+    --bg-grad: none;
+    --surface: #FFFFFF;
+    --surface-2: #FDF9EE;
+    --rail: #E4DCC5;
+    --border: #1A1712;
+    --accent: #F9D65C;
+    --accent-2: #F0C23A;
+    --accent-gradient: linear-gradient(135deg, #FBE18C 0%, #F9D65C 100%);
+    --accent-soft: rgba(249,214,92,0.28);
+    --accent-dim: #EFDFA0;
+    --secondary: #B4AEF5;
+    --secondary-soft: rgba(180,174,245,0.28);
+    --secondary-dim: #C9C4F8;
+    --success: #B4AEF5;
+    --success-soft: rgba(180,174,245,0.28);
+    --danger: #F2775A;
+    --danger-soft: rgba(242,119,90,0.22);
+    --text: #1A1712;
+    --text-muted: #6B6558;
+    --text-faint: #A39C8C;
+    --font-display: 'Baloo 2', sans-serif;
+    --font-body: 'Nunito', sans-serif;
+    --font-mono: 'Baloo 2', sans-serif;
+    --radius: 18px;
+  }
+
+  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html,body{ height:100%; overscroll-behavior: none; }
+  body{
+    margin:0;
+    background: var(--bg-grad), var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    -webkit-font-smoothing: antialiased;
+    overflow-x:hidden;
+  }
+  /* Locks page scroll while a tile is actively being dragged, so a fast flick
+     can't trigger a native scroll that desyncs drop-target coordinates. */
+  body.dragging-active{
+    overflow: hidden;
+    touch-action: none;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+
+  #app{
+    width:100%;
+    max-width:560px;
+    min-height:100vh;
+    padding: max(16px, env(safe-area-inset-top)) 14px calc(16px + env(safe-area-inset-bottom));
+    display:flex;
+    flex-direction:column;
+    position:relative;
+  }
+
+  /* ---------- Header ---------- */
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:6px;
+    gap:8px;
+  }
+  .brand{
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+    min-width:0;
+  }
+  .brand .bolt{
+    font-size: clamp(16px, 4.8vw, 19px);
+  }
+  .brand h1{
+    font-family: var(--font-display);
+    font-size: clamp(18px, 5.2vw, 23px);
+    letter-spacing: 0.2px;
+    margin:0;
+    font-weight:800;
+    white-space:nowrap;
+    color: var(--text);
+  }
+  .brand .puzzle-no{
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--text-muted);
+    white-space:nowrap;
+  }
+  .icon-btn{
+    background: var(--surface);
+    border: 2px solid var(--border);
+    color: var(--text);
+    width:38px; height:38px;
+    flex-shrink:0;
+    border-radius: 10px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    font-size:15px;
+    box-shadow: 0 1px 3px rgba(16,16,20,0.06);
+    transition: transform .15s ease, background .15s ease, border-color .15s ease;
+  }
+  .icon-btn:hover{ background: var(--surface-2); border-color: var(--accent-dim); }
+  .icon-btn:active{ transform: scale(0.93); }
+
+  .statusbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background: var(--surface);
+    border:2px solid var(--border);
+    border-radius: 12px;
+    padding: 9px 12px;
+    margin-top: 12px;
+    margin-bottom: 16px;
+    gap:6px;
+  }
+  .lives{ display:flex; gap:4px; }
+  .lives span{
+    width:14px; height:14px;
+    border-radius:4px;
+    border: 2px solid var(--border);
+    background: var(--surface);
+    display:inline-block;
+    transition: background .15s ease;
+  }
+  .lives span.used{ background: var(--danger); }
+  .stat{
+    display:flex; flex-direction:column; align-items:center; gap:1px;
+    flex-shrink:0;
+  }
+  .stat .label{ font-size:8.5px; text-transform:uppercase; letter-spacing:1px; color:var(--text-faint); }
+  .stat .value{ font-family: var(--font-mono); font-size:13px; font-weight:600; color:var(--text); }
+
+  /* ---------- Category / prompt ---------- */
+  .category-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    align-self:flex-start;
+    background: var(--surface);
+    color: var(--text);
+    border: 2px solid var(--border);
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight:700;
+    letter-spacing:0.3px;
+    margin-bottom: 9px;
+  }
+  .prompt{
+    font-family: var(--font-display);
+    font-size: clamp(15.5px, 4.4vw, 18px);
+    font-weight: 600;
+    line-height:1.35;
+    margin: 0 0 18px;
+    color: var(--text);
+  }
+  .prompt .muted{ color:var(--text-muted); font-weight:500; }
+
+  /* ---------- Vertical timeline rail (signature element) ---------- */
+  .rail-wrap{ margin-bottom: 18px; }
+  .rail-endcap{
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 1.5px;
+    color: var(--text-faint);
+    padding: 0 0 6px 34px;
+  }
+  .rail-endcap.bottom{ padding: 6px 0 0 34px; }
+  .rail{
+    position:relative;
+    padding-left: 34px;
+  }
+  .rail-line{
+    position:absolute;
+    top: 6px;
+    bottom: 6px;
+    left: 14px;
+    width: 2px;
+    background: var(--rail);
+    border-radius:2px;
+  }
+  .rail-line .fill{
+    position:absolute; top:0; left:0; width:100%; height:0%;
+    background: var(--accent);
+    border-radius:2px;
+    transition: height .35s cubic-bezier(.4,0,.2,1), background .25s ease;
+  }
+  .rail-line .fill.success{ background: var(--success); }
+  .slots{
+    position:relative;
+    z-index:1;
+    display:flex;
+    flex-direction:column;
+    gap: 9px;
+  }
+  .slot{
+    min-height: 54px;
+    background: var(--surface-2);
+    border: 2px dashed #C9BE9C;
+    border-radius: 14px;
+    display:flex;
+    align-items:center;
+    position:relative;
+    padding: 10px 12px;
+    transition: border-color .2s ease, background .2s ease;
+  }
+  .slot::before{
+    content: attr(data-ord-num);
+    position:absolute;
+    left: -34px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px; height:24px;
+    border-radius:8px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-display);
+    font-weight:700;
+    font-size: 11px;
+    display:flex; align-items:center; justify-content:center;
+    transition: border-color .2s ease, color .2s ease, background .2s ease;
+  }
+  .slot.filled{ border-style:solid; border-color: var(--border); background: var(--surface); }
+  .slot.filled::before{ background: var(--accent); }
+  .slot.correct{ border-color: var(--border); background: var(--secondary-soft); }
+  .slot.correct::before{ background: var(--secondary); }
+  .slot.wrong{ border-color: var(--border); background: var(--danger-soft); }
+  .slot.wrong::before{ background: var(--danger); }
+  .slot .empty-hint{ color: var(--text-faint); font-size:12px; font-style:italic; }
+
+  .tile{
+    touch-action: none;
+    user-select:none;
+    -webkit-user-select:none;
+    background: var(--surface-2);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 10px 10px;
+    font-size: 12.5px;
+    font-weight:600;
+    font-family: var(--font-body);
+    line-height:1.25;
+    text-align:left;
+    color: var(--text);
+    cursor: grab;
+    width: 100%;
+    box-shadow: 0 1px 2px rgba(16,16,20,0.05);
+    transition: box-shadow .15s ease, border-color .15s ease;
+  }
+  .slot .tile{ background: var(--surface); }
+  .tile .year-reveal{
+    display:inline-block;
+    margin-left:6px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--accent);
+    opacity:0;
+    transition: opacity .3s ease;
+  }
+  .tile.revealed .year-reveal{ opacity:1; }
+  .tile.dragging{
+    cursor:grabbing;
+    box-shadow: 0 12px 24px rgba(16,16,20,0.14), 0 0 0 2px var(--accent);
+    border-color: var(--accent);
+    opacity: 0.98;
+  }
+  .tile-placeholder{
+    border-radius:10px;
+    background: var(--surface-2);
+    border: 1px dashed var(--rail);
+    opacity: 0.5;
+  }
+
+  .tray{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(148px,1fr));
+    gap:8px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 12px;
+    min-height: 60px;
+    margin-bottom: 16px;
+    align-content:start;
+  }
+  @media (max-width:380px){
+    .tray{ grid-template-columns: 1fr 1fr; }
+  }
+  .tray-empty-hint{
+    font-size:12px; color:var(--text-faint); margin:auto; text-align:center; grid-column: 1/-1;
+    font-style:italic;
+  }
+
+  .actions{
+    display:flex;
+    gap:10px;
+    margin-top:auto;
+    position: sticky;
+    bottom: 0;
+    padding: 10px 0 2px;
+    background: linear-gradient(to top, var(--bg) 65%, transparent);
+  }
+  .btn{
+    flex:1;
+    border:none;
+    border-radius: 999px;
+    padding: 14px;
+    font-family: var(--font-display);
+    font-weight:700;
+    font-size:14.5px;
+    letter-spacing:0.3px;
+    cursor:pointer;
+    transition: transform .1s ease, opacity .2s ease, background .2s ease, box-shadow .1s ease;
+    min-height:48px;
+  }
+  .btn-primary{
+    background: var(--secondary);
+    color: var(--text);
+    border: 2.5px solid var(--border);
+    box-shadow: 0 4px 0 var(--border);
+  }
+  .btn-primary:active{ box-shadow: 0 1px 0 var(--border); transform: translateY(3px); }
+  .btn-primary:disabled{
+    opacity:0.4;
+    cursor:not-allowed;
+  }
+  .btn-ghost{
+    background: var(--surface);
+    border:2.5px solid var(--border);
+    color: var(--text);
+    flex: 0 0 auto;
+    width: 48px;
+    box-shadow: 0 4px 0 var(--border);
+  }
+  .btn-ghost:active{ box-shadow: 0 1px 0 var(--border); transform: translateY(3px); }
+
+  /* ---------- shake ---------- */
+  @keyframes shake{
+    10%,90% { transform: translateX(-1px); }
+    20%,80% { transform: translateX(2px); }
+    30%,50%,70% { transform: translateX(-6px); }
+    40%,60% { transform: translateX(6px); }
+  }
+  .shake{ animation: shake 0.5s cubic-bezier(.36,.07,.19,.97); }
+
+  @keyframes pop{
+    0%{ transform: scale(1); }
+    40%{ transform: scale(1.03); }
+    100%{ transform: scale(1); }
+  }
+  .pop{ animation: pop .4s ease; }
+
+  /* Highlights the two tiles that just swapped places. Deliberately only
+     touches box-shadow/border-color (never transform), so it can run at the
+     same time as the FLIP slide animation without fighting over the same
+     CSS property. */
+  @keyframes swapPulse{
+    0%{ box-shadow: 0 0 0 0 rgba(249,214,92,0.7); border-color: var(--border); }
+    60%{ box-shadow: 0 0 0 9px rgba(249,214,92,0); border-color: var(--border); }
+    100%{ box-shadow: 0 0 0 0 rgba(249,214,92,0); }
+  }
+  .tile.swap-pulse{ animation: swapPulse .6s ease-out; }
+
+  /* ---------- Overlays ---------- */
+  .overlay{
+    position:fixed; inset:0;
+    background: rgba(16,16,20,0.45);
+    backdrop-filter: blur(4px);
+    display:flex; align-items:center; justify-content:center;
+    z-index: 50;
+    padding: 16px;
+    opacity:0;
+    pointer-events:none;
+    transition: opacity .25s ease;
+  }
+  .overlay.show{ opacity:1; pointer-events:auto; }
+  .modal{
+    background: var(--surface);
+    border:2.5px solid var(--border);
+    border-radius: 22px;
+    width:100%;
+    max-width: 420px;
+    max-height: 86vh;
+    overflow-y:auto;
+    padding: 20px;
+    box-shadow: 0 20px 44px rgba(16,16,20,0.16);
+    transform: translateY(14px) scale(0.98);
+    transition: transform .25s ease;
+  }
+  .overlay.show .modal{ transform: translateY(0) scale(1); }
+  .modal h2{
+    font-family: var(--font-display);
+    margin: 0 0 4px;
+    font-size:24px;
+    font-weight:800;
+  }
+  .modal .sub{ color:var(--text-muted); font-size:12.5px; margin-bottom:16px; }
+  .modal-close{
+    float:right;
+    background:none; border:none; color:var(--text-muted);
+    font-size:18px; cursor:pointer;
+    padding:4px;
+  }
+
+  /* result screen */
+  .result-hero{ text-align:center; padding: 4px 0 14px; }
+  @keyframes resultBounce{
+    0%{ transform: scale(0.85); opacity:0; }
+    100%{ transform: scale(1); opacity:1; }
+  }
+  .result-emoji{ font-size:36px; margin-bottom:6px; animation: resultBounce .3s ease-out; }
+  .result-emoji-grid{
+    font-size: 24px;
+    letter-spacing: 5px;
+    margin: 8px 0 14px;
+  }
+  .result-stats{
+    display:grid;
+    grid-template-columns: repeat(3,1fr);
+    gap:8px;
+    margin-bottom:16px;
+  }
+  .result-stats .box{
+    background: var(--surface-2);
+    border:2px solid var(--border);
+    border-radius:14px;
+    padding: 10px 6px;
+    text-align:center;
+  }
+  .result-stats .box .n{ font-family:var(--font-mono); font-size:17px; font-weight:600; }
+  .result-stats .box .l{ font-size:9px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.8px; margin-top:2px;}
+
+  .review-heading{
+    font-family: var(--font-display);
+    font-size:14px;
+    font-weight:700;
+    margin: 4px 0 10px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .review-round{ margin-bottom:14px; }
+  .review-round .rr-head{
+    display:flex; align-items:center; gap:6px;
+    font-size:12px; font-weight:700; margin-bottom:6px; color:var(--text);
+  }
+  .review-round .rr-items{
+    display:flex; flex-direction:column; gap:4px;
+    padding-left:10px; border-left:2px solid var(--rail);
+  }
+  .review-item{
+    display:flex; justify-content:space-between; align-items:baseline; gap:8px;
+    font-size:11.5px; color:var(--text-muted);
+    background:var(--surface-2); border-radius:8px; padding:6px 9px;
+  }
+  .review-item b{ color:var(--text); font-weight:600; font-size:12px; }
+  .review-item .yr{ font-family:var(--font-mono); color:var(--accent); font-weight:600; flex-shrink:0; }
+  .review-empty{ font-size:12px; color:var(--text-faint); text-align:center; padding:10px 0; font-style:italic; }
+
+  .toast{
+    position:fixed;
+    bottom: calc(22px + env(safe-area-inset-bottom)); left:50%;
+    transform: translateX(-50%) translateY(12px);
+    background: var(--surface);
+    border: 2px solid var(--border);
+    color: var(--text);
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size:13px;
+    font-weight:700;
+    z-index: 80;
+    opacity:0;
+    box-shadow: 0 8px 20px rgba(16,16,20,0.14);
+    transition: opacity .25s ease, transform .25s ease;
+    pointer-events:none;
+  }
+  .toast.show{ opacity:1; transform: translateX(-50%) translateY(0); }
+
+  /* archive list */
+  .archive-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 11px 4px;
+    border-bottom: 1px solid var(--border);
+    cursor:pointer;
+  }
+  .archive-row:last-child{ border-bottom:none; }
+  .archive-row:hover{ background: var(--surface-2); }
+  .archive-row .d{ display:flex; flex-direction:column; }
+  .archive-row .date{ font-size:13px; font-weight:600; }
+  .archive-row .num{ font-size:10.5px; color:var(--text-faint); font-family:var(--font-mono); }
+  .archive-row .status{ font-size: 16px; }
+
+  .rules-list{ font-size:13px; line-height:1.7; color: var(--text-muted); padding-left:18px; margin:0; }
+  .rules-list li{ margin-bottom:6px; }
+  .rules-list b{ color:var(--text); }
+
+  footer.hint{
+    text-align:center;
+    color: var(--text-faint);
+    font-size:11px;
+    margin-top:10px;
+  }
+
+  ::-webkit-scrollbar{ width:8px; }
+  ::-webkit-scrollbar-thumb{ background:#E4DCC5; border-radius:8px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <span class="bolt">⚡</span>
+      <h1>FLASHPOINT</h1>
+      <span class="puzzle-no" id="puzzleNo">#000</span>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="icon-btn" id="infoBtn" title="How to play">?</button>
+      <button class="icon-btn" id="archiveBtn" title="Archive">🗂</button>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <div class="lives" id="livesRow"></div>
+    <div class="stat"><span class="label">Round</span><span class="value" id="roundStat">1/5</span></div>
+    <div class="stat"><span class="label">Time</span><span class="value" id="timerStat">00:00</span></div>
+  </div>
+
+  <div id="gameScreen">
+    <span class="category-pill" id="categoryPill">— —</span>
+    <p class="prompt" id="promptText">Loading today's puzzle…</p>
+
+    <div class="rail-wrap">
+      <div class="rail-endcap">↑ EARLIEST</div>
+      <div class="rail">
+        <div class="rail-line"><div class="fill" id="railFill"></div></div>
+        <div class="slots" id="slots"></div>
+      </div>
+      <div class="rail-endcap bottom">↓ LATEST</div>
+    </div>
+
+    <div class="tray" id="tray"></div>
+
+    <div class="actions">
+      <button class="btn btn-ghost" id="resetRoundBtn" title="Reset this round">↺</button>
+      <button class="btn btn-primary" id="submitBtn" disabled>Check Order</button>
+    </div>
+  </div>
+
+  <footer class="hint">Drag tiles onto the rail — or tap one to drop it in the next open slot.</footer>
+</div>
+
+<!-- Result overlay -->
+<div class="overlay" id="resultOverlay">
+  <div class="modal">
+    <div class="result-hero">
+      <div class="result-emoji" id="resultHeadline">🏆</div>
+      <h2 id="resultTitle">Puzzle complete</h2>
+      <div class="sub" id="resultSub">Nice work today.</div>
+      <div class="result-emoji-grid" id="resultGrid"></div>
+    </div>
+    <div class="result-stats">
+      <div class="box"><div class="n" id="statRounds">0/5</div><div class="l">Rounds</div></div>
+      <div class="box"><div class="n" id="statLives">7</div><div class="l">Lives left</div></div>
+      <div class="box"><div class="n" id="statTime">00:00</div><div class="l">Time</div></div>
+    </div>
+
+    <div class="review-heading">🔎 Admire your timelines</div>
+    <div id="reviewPanel"></div>
+
+    <div class="actions" style="position:static; background:none; margin-top:14px;">
+      <button class="btn btn-ghost" id="closeResultBtn">✕</button>
+      <button class="btn btn-primary" id="shareBtn">Share Results</button>
+    </div>
+  </div>
+</div>
+
+<!-- Archive overlay -->
+<div class="overlay" id="archiveOverlay">
+  <div class="modal">
+    <button class="modal-close" id="closeArchiveBtn">✕</button>
+    <h2>Archive</h2>
+    <div class="sub">Play or revisit any past day's puzzle.</div>
+    <div id="archiveList"></div>
+  </div>
+</div>
+
+<!-- Info overlay -->
+<div class="overlay" id="infoOverlay">
+  <div class="modal">
+    <button class="modal-close" id="closeInfoBtn">✕</button>
+    <h2>How to play</h2>
+    <div class="sub">5 rounds. 7 lives. One set of milestones a day.</div>
+    <ul class="rules-list">
+      <li>Drag the 5 tiles onto the rail in chronological order, earliest at the top.</li>
+      <li>Tap Check Order when all 5 slots are filled.</li>
+      <li>A wrong order costs 1 life — you can keep adjusting and retry.</li>
+      <li>Run out of 7 lives and your run ends for the day.</li>
+      <li>Solve all 5 rounds to win. Difficulty rises each round, and the category never repeats from the day before.</li>
+      <li>When you finish (or run out of lives), you can review every timeline you solved that session.</li>
+      <li>Use Share Results to copy a spoiler-free emoji recap, themed to your last solved category.</li>
+      <li>Missed a day? Catch up anytime in the Archive.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="toast" id="toast">Copied to clipboard!</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============ SEEDED RNG ============ */
+  function xmur3(str){
+    let h = 1779033703 ^ str.length;
+    for(let i=0;i<str.length;i++){
+      h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+      h = (h << 13) | (h >>> 19);
+    }
+    return function(){
+      h = Math.imul(h ^ (h >>> 16), 2246822507);
+      h = Math.imul(h ^ (h >>> 13), 3266489909);
+      h ^= h >>> 16;
+      return h >>> 0;
+    };
+  }
+  function mulberry32(a){
+    return function(){
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function rngFromSeed(seedStr){
+    const gen = xmur3(seedStr);
+    return mulberry32(gen());
+  }
+  function seededShuffle(arr, rng){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(rng()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+
+  /* ============ CONFIG ============ */
+  const LAUNCH_DATE = "2024-01-01";
+
+  function dateStrOf(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+  function todayStr(){ return dateStrOf(new Date()); }
+  function puzzleNumber(ds){
+    const start = new Date(LAUNCH_DATE+"T00:00:00");
+    const cur = new Date(ds+"T00:00:00");
+    const diff = Math.round((cur-start)/86400000);
+    return diff+1;
+  }
+
+  /* ============ CATEGORY DATA ============ */
+  const CATEGORIES = {
+    harrypotter: {
+      name:"Harry Potter", icon:"⚡",
+      prompt:"Arrange these Harry Potter films by U.S. release date.",
+      emojis:["⚡","🪄","🦉"],
+      sets:[
+        {difficulty:1, items:[
+          {label:"Harry Potter and the Sorcerer's Stone", sortValue:2001.917},
+          {label:"Harry Potter and the Prisoner of Azkaban", sortValue:2004.417},
+          {label:"Harry Potter and the Order of the Phoenix", sortValue:2007.5},
+          {label:"Harry Potter and the Half-Blood Prince", sortValue:2009.5},
+          {label:"Harry Potter and the Deathly Hallows – Part 2", sortValue:2011.5}
+        ]},
+        {difficulty:3, items:[
+          {label:"Harry Potter and the Prisoner of Azkaban", sortValue:2004.417},
+          {label:"Harry Potter and the Order of the Phoenix", sortValue:2007.5},
+          {label:"Harry Potter and the Half-Blood Prince", sortValue:2009.5},
+          {label:"Harry Potter and the Deathly Hallows – Part 1", sortValue:2010.917},
+          {label:"Harry Potter and the Deathly Hallows – Part 2", sortValue:2011.5}
+        ]},
+        {difficulty:5, items:[
+          {label:"Harry Potter and the Chamber of Secrets", sortValue:2002.917},
+          {label:"Harry Potter and the Prisoner of Azkaban", sortValue:2004.417},
+          {label:"Harry Potter and the Goblet of Fire", sortValue:2005.917},
+          {label:"Harry Potter and the Order of the Phoenix", sortValue:2007.5},
+          {label:"Harry Potter and the Half-Blood Prince", sortValue:2009.5}
+        ]}
+      ]
+    },
+    starwars: {
+      name:"Star Wars", icon:"🌟",
+      prompt:"Arrange these Star Wars films by original theatrical release date.",
+      emojis:["🌟","🚀","🤖"],
+      sets:[
+        {difficulty:1, items:[
+          {label:"Star Wars: A New Hope", sortValue:1977.33},
+          {label:"Star Wars: The Phantom Menace", sortValue:1999.33},
+          {label:"Star Wars: Revenge of the Sith", sortValue:2005.33},
+          {label:"Star Wars: The Force Awakens", sortValue:2015.917},
+          {label:"Star Wars: The Rise of Skywalker", sortValue:2019.917}
+        ]},
+        {difficulty:3, items:[
+          {label:"Star Wars: Return of the Jedi", sortValue:1983.33},
+          {label:"Star Wars: The Phantom Menace", sortValue:1999.33},
+          {label:"Star Wars: Attack of the Clones", sortValue:2002.33},
+          {label:"Star Wars: Revenge of the Sith", sortValue:2005.33},
+          {label:"Star Wars: The Force Awakens", sortValue:2015.917}
+        ]},
+        {difficulty:5, items:[
+          {label:"Star Wars: The Force Awakens", sortValue:2015.917},
+          {label:"Rogue One: A Star Wars Story", sortValue:2016.917},
+          {label:"Star Wars: The Last Jedi", sortValue:2017.917},
+          {label:"Solo: A Star Wars Story", sortValue:2018.33},
+          {label:"Star Wars: The Rise of Skywalker", sortValue:2019.917}
+        ]}
+      ]
+    },
+    marvel: {
+      name:"Marvel Studios", icon:"🛡️",
+      prompt:"Arrange these Marvel Studios films by U.S. theatrical release date.",
+      emojis:["🛡️","⚛️","💥"],
+      sets:[
+        {difficulty:2, items:[
+          {label:"Iron Man", sortValue:2008.33},
+          {label:"The Avengers", sortValue:2012.33},
+          {label:"Guardians of the Galaxy", sortValue:2014.58},
+          {label:"Captain America: Civil War", sortValue:2016.33},
+          {label:"Avengers: Infinity War", sortValue:2018.25}
+        ]},
+        {difficulty:3, items:[
+          {label:"The Avengers", sortValue:2012.33},
+          {label:"Guardians of the Galaxy", sortValue:2014.58},
+          {label:"Captain America: Civil War", sortValue:2016.33},
+          {label:"Guardians of the Galaxy Vol. 2", sortValue:2017.33},
+          {label:"Avengers: Infinity War", sortValue:2018.25}
+        ]},
+        {difficulty:5, items:[
+          {label:"Captain America: Civil War", sortValue:2016.33},
+          {label:"Guardians of the Galaxy Vol. 2", sortValue:2017.33},
+          {label:"Avengers: Infinity War", sortValue:2018.25},
+          {label:"Captain Marvel", sortValue:2019.17},
+          {label:"Avengers: Endgame", sortValue:2019.25}
+        ]}
+      ]
+    },
+    pixar: {
+      name:"Pixar", icon:"🎈",
+      prompt:"Arrange these Pixar films by U.S. release date.",
+      emojis:["🎈","🧸","🌈"],
+      sets:[
+        {difficulty:2, items:[
+          {label:"Toy Story", sortValue:1995.917},
+          {label:"Monsters, Inc.", sortValue:2001.917},
+          {label:"The Incredibles", sortValue:2004.917},
+          {label:"WALL-E", sortValue:2008.417},
+          {label:"Toy Story 3", sortValue:2010.417}
+        ]},
+        {difficulty:3, items:[
+          {label:"Monsters, Inc.", sortValue:2001.917},
+          {label:"The Incredibles", sortValue:2004.917},
+          {label:"Ratatouille", sortValue:2007.417},
+          {label:"Up", sortValue:2009.33},
+          {label:"Toy Story 3", sortValue:2010.417}
+        ]},
+        {difficulty:4, items:[
+          {label:"The Incredibles", sortValue:2004.917},
+          {label:"Cars", sortValue:2006.417},
+          {label:"Ratatouille", sortValue:2007.417},
+          {label:"WALL-E", sortValue:2008.417},
+          {label:"Up", sortValue:2009.33}
+        ]}
+      ]
+    },
+    history: {
+      name:"History", icon:"🏛️",
+      prompt:"Arrange these historical events in the order they happened.",
+      emojis:["🏛️","📜","⏳"],
+      sets:[
+        {difficulty:1, items:[
+          {label:"The Titanic sinks", sortValue:1912.25},
+          {label:"World War II ends", sortValue:1945.58},
+          {label:"Apollo 11 moon landing", sortValue:1969.5},
+          {label:"The Berlin Wall falls", sortValue:1989.83},
+          {label:"September 11 attacks", sortValue:2001.67}
+        ]},
+        {difficulty:3, items:[
+          {label:"The Titanic sinks", sortValue:1912.25},
+          {label:"World War I ends", sortValue:1918.83},
+          {label:"The Great Depression begins", sortValue:1929.83},
+          {label:"World War II begins", sortValue:1939.75},
+          {label:"World War II ends", sortValue:1945.58}
+        ]},
+        {difficulty:4, items:[
+          {label:"World War I begins", sortValue:1914.5},
+          {label:"World War I ends", sortValue:1918.83},
+          {label:"The Great Depression begins", sortValue:1929.83},
+          {label:"World War II begins", sortValue:1939.75},
+          {label:"Attack on Pearl Harbor", sortValue:1941.92}
+        ]}
+      ]
+    },
+    tech: {
+      name:"Tech", icon:"💻",
+      prompt:"Arrange these tech milestones in the order they launched.",
+      emojis:["💻","🔌","📡"],
+      sets:[
+        {difficulty:2, items:[
+          {label:"The World Wide Web goes public", sortValue:1991.5},
+          {label:"Google is founded", sortValue:1998.75},
+          {label:"Facebook is founded", sortValue:2004.08},
+          {label:"The first iPhone is released", sortValue:2007.5},
+          {label:"The first iPad is released", sortValue:2010.33}
+        ]},
+        {difficulty:3, items:[
+          {label:"Google is founded", sortValue:1998.75},
+          {label:"Facebook is founded", sortValue:2004.08},
+          {label:"The first iPhone is released", sortValue:2007.5},
+          {label:"Instagram launches", sortValue:2010.83},
+          {label:"TikTok launches globally", sortValue:2018.67}
+        ]},
+        {difficulty:4, items:[
+          {label:"The first iPhone is released", sortValue:2007.5},
+          {label:"The App Store launches", sortValue:2008.58},
+          {label:"Instagram launches", sortValue:2010.83},
+          {label:"Snapchat launches", sortValue:2011.75},
+          {label:"TikTok launches globally", sortValue:2018.67}
+        ]}
+      ]
+    },
+    music: {
+      name:"Music", icon:"🎵",
+      prompt:"Arrange these music-industry milestones in order.",
+      emojis:["🎵","🎸","🎧"],
+      sets:[
+        {difficulty:2, items:[
+          {label:"The Beatles form in Liverpool", sortValue:1960.5},
+          {label:"The Woodstock festival is held", sortValue:1969.67},
+          {label:"MTV launches", sortValue:1981.67},
+          {label:"Napster launches", sortValue:1999.5},
+          {label:"Spotify launches", sortValue:2008.83}
+        ]},
+        {difficulty:3, items:[
+          {label:"The Woodstock festival is held", sortValue:1969.67},
+          {label:"MTV launches", sortValue:1981.67},
+          {label:"Napster launches", sortValue:1999.5},
+          {label:"Spotify launches", sortValue:2008.83},
+          {label:"Apple Music launches", sortValue:2015.5}
+        ]},
+        {difficulty:5, items:[
+          {label:"Napster launches", sortValue:1999.5},
+          {label:"Spotify is founded", sortValue:2006.33},
+          {label:"Spotify launches in the U.S.", sortValue:2011.58},
+          {label:"Tidal launches", sortValue:2014.83},
+          {label:"Apple Music launches", sortValue:2015.5}
+        ]}
+      ]
+    },
+    inventions: {
+      name:"Inventions", icon:"💡",
+      prompt:"Arrange these inventions in the order they were introduced.",
+      emojis:["💡","⚙️","🔧"],
+      sets:[
+        {difficulty:1, items:[
+          {label:"The printing press", sortValue:1440},
+          {label:"The telephone", sortValue:1876.17},
+          {label:"The practical light bulb", sortValue:1879.92},
+          {label:"The automobile (Benz Patent-Motorwagen)", sortValue:1886.0},
+          {label:"Powered airplane flight", sortValue:1903.92}
+        ]},
+        {difficulty:3, items:[
+          {label:"The telephone", sortValue:1876.17},
+          {label:"The practical light bulb", sortValue:1879.92},
+          {label:"Long-distance wireless radio", sortValue:1895.5},
+          {label:"Powered airplane flight", sortValue:1903.92},
+          {label:"Television is first demonstrated", sortValue:1926.08}
+        ]},
+        {difficulty:4, items:[
+          {label:"The telephone", sortValue:1876.17},
+          {label:"The practical light bulb", sortValue:1879.92},
+          {label:"The automobile (Benz Patent-Motorwagen)", sortValue:1886.0},
+          {label:"Long-distance wireless radio", sortValue:1895.5},
+          {label:"Powered airplane flight", sortValue:1903.92}
+        ]}
+      ]
+    },
+    videogames: {
+      name:"Video Games", icon:"🎮",
+      prompt:"Arrange these video games by original release date.",
+      emojis:["🎮","👾","🕹️"],
+      sets:[
+        {difficulty:1, items:[
+          {label:"Pong", sortValue:1972.92},
+          {label:"Space Invaders", sortValue:1978.5},
+          {label:"Tetris", sortValue:1984.5},
+          {label:"Super Mario Bros.", sortValue:1985.75},
+          {label:"Minecraft", sortValue:2011.83}
+        ]},
+        {difficulty:3, items:[
+          {label:"Space Invaders", sortValue:1978.5},
+          {label:"Tetris", sortValue:1984.5},
+          {label:"Super Mario Bros.", sortValue:1985.75},
+          {label:"Minecraft", sortValue:2011.83},
+          {label:"Fortnite Battle Royale", sortValue:2017.75}
+        ]},
+        {difficulty:4, items:[
+          {label:"Minecraft", sortValue:2011.83},
+          {label:"Grand Theft Auto V", sortValue:2013.75},
+          {label:"Fortnite Battle Royale", sortValue:2017.75},
+          {label:"Among Us", sortValue:2018.5},
+          {label:"Animal Crossing: New Horizons", sortValue:2020.25}
+        ]}
+      ]
+    },
+    foodtrends: {
+      name:"Food Trends", icon:"🍔",
+      prompt:"Arrange these food moments in the order they happened.",
+      emojis:["🍔","🧋","🥑"],
+      sets:[
+        {difficulty:2, items:[
+          {label:"Sliced bread first sold commercially", sortValue:1928.58},
+          {label:"McDonald's is founded", sortValue:1940.42},
+          {label:"Instant ramen is invented", sortValue:1958.67},
+          {label:"The Cronut is invented", sortValue:2013.42},
+          {label:"Oat milk lattes go mainstream", sortValue:2019.5}
+        ]},
+        {difficulty:3, items:[
+          {label:"McDonald's is founded", sortValue:1940.42},
+          {label:"Instant ramen is invented", sortValue:1958.67},
+          {label:"The Cronut is invented", sortValue:2013.42},
+          {label:"Poke bowls go mainstream in the U.S.", sortValue:2016.5},
+          {label:"The Unicorn Frappuccino is released", sortValue:2017.33}
+        ]},
+        {difficulty:5, items:[
+          {label:"The Cronut is invented", sortValue:2013.42},
+          {label:"Poke bowls go mainstream in the U.S.", sortValue:2016.5},
+          {label:"The Unicorn Frappuccino is released", sortValue:2017.33},
+          {label:"Whipped 'Dalgona' coffee trends", sortValue:2020.25},
+          {label:"'Girl dinner' goes viral", sortValue:2023.5}
+        ]}
+      ]
+    },
+    space: {
+      name:"Space Exploration", icon:"🚀",
+      prompt:"Arrange these space milestones in the order they happened.",
+      emojis:["🚀","🛰️","🌌"],
+      sets:[
+        {difficulty:1, items:[
+          {label:"Sputnik 1 launches", sortValue:1957.75},
+          {label:"The first human reaches space", sortValue:1961.25},
+          {label:"The first Moon landing", sortValue:1969.5},
+          {label:"Voyager 1 launches", sortValue:1977.75},
+          {label:"The first ISS module launches", sortValue:1998.83}
+        ]},
+        {difficulty:3, items:[
+          {label:"The first Moon landing", sortValue:1969.5},
+          {label:"The first Space Shuttle launches", sortValue:1981.33},
+          {label:"The Hubble Space Telescope launches", sortValue:1990.33},
+          {label:"The first ISS module launches", sortValue:1998.83},
+          {label:"SpaceX launches its first crewed mission", sortValue:2020.42}
+        ]},
+        {difficulty:5, items:[
+          {label:"Sputnik 1 launches", sortValue:1957.75},
+          {label:"Explorer 1, the first U.S. satellite, launches", sortValue:1958.08},
+          {label:"The first human reaches space", sortValue:1961.25},
+          {label:"The first American orbits Earth", sortValue:1962.17},
+          {label:"The first spacewalk takes place", sortValue:1965.25}
+        ]}
+      ]
+    },
+    automobiles: {
+      name:"Automobiles", icon:"🚗",
+      prompt:"Arrange these car milestones in the order they happened.",
+      emojis:["🚗","🔧","🛣️"],
+      sets:[
+        {difficulty:1, items:[
+          {label:"The Benz Patent-Motorwagen, the first automobile", sortValue:1886.0},
+          {label:"The Ford Model T is released", sortValue:1908.83},
+          {label:"The Volkswagen Beetle debuts", sortValue:1938.17},
+          {label:"The Toyota Corolla launches", sortValue:1966.83},
+          {label:"The Tesla Model S is released", sortValue:2012.5}
+        ]},
+        {difficulty:3, items:[
+          {label:"The Ford Model T is released", sortValue:1908.83},
+          {label:"The Volkswagen Beetle debuts", sortValue:1938.17},
+          {label:"The Toyota Corolla launches", sortValue:1966.83},
+          {label:"The first Toyota Prius is released", sortValue:1997.83},
+          {label:"The Tesla Model S is released", sortValue:2012.5}
+        ]},
+        {difficulty:5, items:[
+          {label:"The Tesla Roadster is released", sortValue:2008.17},
+          {label:"The Nissan Leaf is released", sortValue:2010.92},
+          {label:"The Tesla Model S is released", sortValue:2012.5},
+          {label:"The Tesla Model 3 is released", sortValue:2017.58},
+          {label:"The Ford Mustang Mach-E is released", sortValue:2020.83}
+        ]}
+      ]
+    },
+    toys: {
+      name:"Toys & Games", icon:"🧸",
+      prompt:"Arrange these toy and game milestones in the order they happened.",
+      emojis:["🧸","🎲","🪀"],
+      sets:[
+        {difficulty:1, items:[
+          {label:"Monopoly is published", sortValue:1935.0},
+          {label:"The Barbie doll is introduced", sortValue:1959.17},
+          {label:"The Rubik's Cube is invented", sortValue:1974.0},
+          {label:"Cabbage Patch Kids are released", sortValue:1982.75},
+          {label:"The Pokémon Trading Card Game is released", sortValue:1996.83}
+        ]},
+        {difficulty:3, items:[
+          {label:"The Rubik's Cube is invented", sortValue:1974.0},
+          {label:"Cabbage Patch Kids are released", sortValue:1982.75},
+          {label:"Beanie Babies launch", sortValue:1993.0},
+          {label:"Furby is released", sortValue:1998.83},
+          {label:"The Pokémon Trading Card Game launches in the U.S.", sortValue:1999.08}
+        ]},
+        {difficulty:5, items:[
+          {label:"Beanie Babies launch", sortValue:1993.0},
+          {label:"Tickle Me Elmo is released", sortValue:1996.83},
+          {label:"Tamagotchi is released", sortValue:1997.33},
+          {label:"Furby is released", sortValue:1998.83},
+          {label:"The Pokémon Trading Card Game launches in the U.S.", sortValue:1999.08}
+        ]}
+      ]
+    },
+    fashion: {
+      name:"Fashion", icon:"👟",
+      prompt:"Arrange these fashion milestones in the order they happened.",
+      emojis:["👟","👗","🕶️"],
+      sets:[
+        {difficulty:1, items:[
+          {label:"Levi's patents blue jeans", sortValue:1873.42},
+          {label:"Coco Chanel popularizes the 'little black dress'", sortValue:1926.83},
+          {label:"The bikini is introduced", sortValue:1946.58},
+          {label:"The Nike Air Jordan 1 is released", sortValue:1985.33},
+          {label:"Crocs shoes launch", sortValue:2002.5}
+        ]},
+        {difficulty:3, items:[
+          {label:"Levi's patents blue jeans", sortValue:1873.42},
+          {label:"The bikini is introduced", sortValue:1946.58},
+          {label:"The Nike Air Jordan 1 is released", sortValue:1985.33},
+          {label:"Crocs shoes launch", sortValue:2002.5},
+          {label:"The Adidas Yeezy Boost 350 is released", sortValue:2015.17}
+        ]},
+        {difficulty:5, items:[
+          {label:"The Nike Air Jordan 1 is released", sortValue:1985.33},
+          {label:"The Nike Air Max 1 is released", sortValue:1987.25},
+          {label:"The Nike Air Yeezy is released", sortValue:2009.25},
+          {label:"The Adidas Yeezy Boost 350 is released", sortValue:2015.17},
+          {label:"The Nike Adapt BB self-lacing sneaker is released", sortValue:2019.08}
+        ]}
+      ]
+    },
+    sports: {
+      name:"Sports", icon:"🏆",
+      prompt:"Arrange these sports milestones in the order they happened.",
+      emojis:["🏆","⚽","🏅"],
+      sets:[
+        {difficulty:1, items:[
+          {label:"The first modern Olympic Games are held", sortValue:1896.33},
+          {label:"The first FIFA World Cup is held", sortValue:1930.58},
+          {label:"The first Super Bowl is played", sortValue:1967.08},
+          {label:"Michael Jordan wins his final title with the Bulls", sortValue:1998.5},
+          {label:"Tom Brady wins his seventh Super Bowl", sortValue:2021.02}
+        ]},
+        {difficulty:3, items:[
+          {label:"The first Super Bowl is played", sortValue:1967.08},
+          {label:"Michael Jordan wins his final title with the Bulls", sortValue:1998.5},
+          {label:"Usain Bolt sets the 100m world record", sortValue:2009.67},
+          {label:"LeBron James wins his first NBA title", sortValue:2012.5},
+          {label:"Lionel Messi wins the World Cup with Argentina", sortValue:2022.92}
+        ]},
+        {difficulty:5, items:[
+          {label:"Usain Bolt sets the 100m world record", sortValue:2009.67},
+          {label:"LeBron James wins his first NBA title", sortValue:2012.5},
+          {label:"Germany wins the World Cup in Brazil", sortValue:2014.5},
+          {label:"The U.S. wins the Women's World Cup in France", sortValue:2019.5},
+          {label:"Lionel Messi wins the World Cup with Argentina", sortValue:2022.92}
+        ]}
+      ]
+    },
+    streaming: {
+      name:"Streaming & TV", icon:"📺",
+      prompt:"Arrange these streaming and TV milestones in the order they happened.",
+      emojis:["📺","🍿","🎬"],
+      sets:[
+        {difficulty:1, items:[
+          {label:"Friends premieres", sortValue:1994.75},
+          {label:"Netflix launches its streaming service", sortValue:2007.08},
+          {label:"Game of Thrones premieres", sortValue:2011.33},
+          {label:"Stranger Things premieres on Netflix", sortValue:2016.58},
+          {label:"Squid Game premieres on Netflix", sortValue:2021.75}
+        ]},
+        {difficulty:3, items:[
+          {label:"Netflix launches its streaming service", sortValue:2007.08},
+          {label:"Game of Thrones premieres", sortValue:2011.33},
+          {label:"Stranger Things premieres on Netflix", sortValue:2016.58},
+          {label:"Disney+ launches", sortValue:2019.863},
+          {label:"Squid Game premieres on Netflix", sortValue:2021.75}
+        ]},
+        {difficulty:5, items:[
+          {label:"Netflix launches its streaming service", sortValue:2007.08},
+          {label:"Hulu launches", sortValue:2008.17},
+          {label:"Apple TV+ launches", sortValue:2019.833},
+          {label:"Disney+ launches", sortValue:2019.863},
+          {label:"HBO Max launches", sortValue:2020.42}
+        ]}
+      ]
+    }
+  };
+  const CATEGORY_KEYS = Object.keys(CATEGORIES);
+
+  /* ============ DAILY PUZZLE BUILDER (never repeats vs. the previous day) ============ */
+  function rawShuffledCategories(dateStr){
+    const rng = rngFromSeed(dateStr+"|cats");
+    return seededShuffle(CATEGORY_KEYS, rng);
+  }
+
+  // Memoized + recursive: each day's category set is checked against the *actual*
+  // (post-conflict-resolution) set used the day before, all the way back to launch.
+  const categoryCache = {};
+  function categoriesForDate(dateStr){
+    if(categoryCache[dateStr]) return categoryCache[dateStr];
+
+    const shuffled = rawShuffledCategories(dateStr);
+    const top5 = shuffled.slice(0,5);
+    const tail = shuffled.slice(5);
+
+    let prevActual = new Set();
+    if(dateStr > LAUNCH_DATE){
+      const prevDateStr = dateStrOf(new Date(new Date(dateStr+"T00:00:00").getTime() - 86400000));
+      prevActual = new Set(categoriesForDate(prevDateStr));
+    }
+
+    const finalCats = [];
+    const tailPointer = tail.slice();
+    for(const cat of top5){
+      if(prevActual.has(cat)){
+        const replaceIdx = tailPointer.findIndex(c => !prevActual.has(c));
+        if(replaceIdx !== -1){
+          finalCats.push(tailPointer[replaceIdx]);
+          tailPointer.splice(replaceIdx,1);
+          continue;
+        }
+      }
+      finalCats.push(cat);
+    }
+    categoryCache[dateStr] = finalCats;
+    return finalCats;
+  }
+
+  function buildPuzzle(dateStr){
+    const cats = categoriesForDate(dateStr);
+    return cats.map((catKey, i) => {
+      const target = 1 + i*1.2;
+      const cat = CATEGORIES[catKey];
+      let best = cat.sets[0];
+      let bestDiff = Math.abs(cat.sets[0].difficulty - target);
+      for(let s=1;s<cat.sets.length;s++){
+        const d = Math.abs(cat.sets[s].difficulty - target);
+        if(d < bestDiff){ best = cat.sets[s]; bestDiff = d; }
+      }
+      const tileRng = rngFromSeed(dateStr+"|"+catKey+"|"+i+"|tiles");
+      const items = seededShuffle(best.items, tileRng);
+      return { categoryKey: catKey, items };
+    });
+  }
+
+  /* ============ STATE ============ */
+  const TOTAL_ROUNDS = 5;
+  const MAX_LIVES = 7;
+  const STORAGE_KEY = "flashpoint_daily_results_v1";
+
+  let state = null;
+
+  function loadResults(){
+    try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+    catch(e){ return {}; }
+  }
+  function saveResult(dateStr, result){
+    const all = loadResults();
+    all[dateStr] = result;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+  }
+
+  function newState(dateStr){
+    return {
+      dateStr,
+      rounds: buildPuzzle(dateStr),
+      currentRound: 0,
+      lives: MAX_LIVES,
+      roundMistakes: [0,0,0,0,0],
+      roundCompleted: [false,false,false,false,false],
+      solvedRounds: [null,null,null,null,null],
+      lastCompletedCategory: null,
+      startTime: Date.now(),
+      elapsedMs: 0,
+      finished: false,
+      won: false,
+      timerHandle: null
+    };
+  }
+
+  /* ============ DOM refs ============ */
+  const $ = (id) => document.getElementById(id);
+  const puzzleNoEl = $("puzzleNo");
+  const livesRow = $("livesRow");
+  const roundStat = $("roundStat");
+  const timerStat = $("timerStat");
+  const categoryPill = $("categoryPill");
+  const promptText = $("promptText");
+  const slotsEl = $("slots");
+  const trayEl = $("tray");
+  const railFill = $("railFill");
+  const submitBtn = $("submitBtn");
+  const resetRoundBtn = $("resetRoundBtn");
+  const resultOverlay = $("resultOverlay");
+  const archiveOverlay = $("archiveOverlay");
+  const infoOverlay = $("infoOverlay");
+  const toastEl = $("toast");
+
+  /* ============ RENDER ============ */
+  function fmtTime(ms){
+    const totalSec = Math.floor(ms/1000);
+    const m = String(Math.floor(totalSec/60)).padStart(2,'0');
+    const s = String(totalSec%60).padStart(2,'0');
+    return `${m}:${s}`;
+  }
+
+  function renderLives(){
+    livesRow.innerHTML = "";
+    const mistakesUsed = MAX_LIVES - state.lives;
+    for(let i=0;i<MAX_LIVES;i++){
+      const span = document.createElement('span');
+      if(i < mistakesUsed) span.classList.add('used');
+      livesRow.appendChild(span);
+    }
+  }
+
+  function renderStatus(){
+    roundStat.textContent = `${Math.min(state.currentRound+1,TOTAL_ROUNDS)}/${TOTAL_ROUNDS}`;
+    puzzleNoEl.textContent = "#"+String(puzzleNumber(state.dateStr)).padStart(3,'0');
+  }
+
+  function updateRailFill(){
+    const filledCount = [...slotsEl.children].filter(s => s.querySelector('.tile')).length;
+    railFill.style.height = (filledCount/5*100)+"%";
+  }
+
+  function tickTimer(){
+    if(state.finished) return;
+    state.elapsedMs = Date.now() - state.startTime;
+    timerStat.textContent = fmtTime(state.elapsedMs);
+  }
+
+  function makeTileEl(item, idx, roundIdx){
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    tile.dataset.idx = idx;
+    tile.dataset.round = roundIdx;
+    const labelSpan = document.createElement('span');
+    labelSpan.textContent = item.label;
+    tile.appendChild(labelSpan);
+    const yearSpan = document.createElement('span');
+    yearSpan.className = 'year-reveal';
+    yearSpan.textContent = "· "+Math.floor(item.sortValue);
+    tile.appendChild(yearSpan);
+    makeDraggable(tile);
+    return tile;
+  }
+
+  function loadRound(i){
+    // safety: remove any tiles/placeholders stranded on <body> from a previous round
+    document.querySelectorAll('body > .tile, body > .tile-placeholder').forEach(el => el.remove());
+    disarmWatchdog();
+    removeWindowDragListeners();
+    dragState = null;
+
+    const round = state.rounds[i];
+    const cat = CATEGORIES[round.categoryKey];
+
+    categoryPill.textContent = `${cat.icon} ${cat.name}`;
+    promptText.innerHTML = `${cat.prompt} <span class="muted">Round ${i+1} of ${TOTAL_ROUNDS}.</span>`;
+    railFill.style.height = "0%";
+    railFill.classList.remove('success');
+
+    slotsEl.innerHTML = "";
+    const ords = ["1","2","3","4","5"];
+    for(let s=0;s<5;s++){
+      const slot = document.createElement('div');
+      slot.className = 'slot';
+      slot.dataset.ordNum = ords[s];
+      slot.dataset.index = s;
+      const hint = document.createElement('span');
+      hint.className = 'empty-hint';
+      hint.textContent = 'drop here';
+      slot.appendChild(hint);
+      slotsEl.appendChild(slot);
+    }
+
+    trayEl.innerHTML = "";
+    round.items.forEach((item, idx) => {
+      trayEl.appendChild(makeTileEl(item, idx, i));
+    });
+
+    renderStatus();
+    updateSubmitState();
+  }
+
+  /* ============ DRAG & DROP ============ */
+  // Architecture note: earlier versions tracked the pointer via listeners on the
+  // tile itself plus setPointerCapture(). Under a fast flick, the tile (which is
+  // reparented to <body> and follows the pointer) can visually lag the real
+  // finger position by a frame, and pointer capture doesn't reliably survive
+  // that reparenting on every browser/webview — so move/up events could be
+  // dropped instead of reaching the tile, leaving it stranded mid-air.
+  //
+  // Fix: track the drag with listeners on `window` instead, which always
+  // receives the events regardless of capture or which element is currently
+  // hit-tested underneath the pointer. Drop-target detection uses geometric
+  // bounding-box checks instead of elementFromPoint, and a watchdog timer
+  // guarantees the drag is force-released if no move/up event arrives for a
+  // few seconds, no matter the cause.
+  let dragState = null;
+  let dragWatchdogId = null;
+
+  function armWatchdog(){
+    clearTimeout(dragWatchdogId);
+    dragWatchdogId = setTimeout(() => { if(dragState) cancelActiveDrag(); }, 4000);
+  }
+  function disarmWatchdog(){
+    clearTimeout(dragWatchdogId);
+    dragWatchdogId = null;
+  }
+
+  function makePlaceholder(tile){
+    const ph = document.createElement('div');
+    ph.className = 'tile-placeholder';
+    const rect = tile.getBoundingClientRect();
+    ph.style.height = rect.height+'px';
+    return ph;
+  }
+
+  function addWindowDragListeners(){
+    window.addEventListener('pointermove', onWindowPointerMove, { passive:false });
+    window.addEventListener('pointerup', onWindowPointerUp, { passive:false });
+    window.addEventListener('pointercancel', onWindowPointerCancel, { passive:false });
+  }
+  function removeWindowDragListeners(){
+    window.removeEventListener('pointermove', onWindowPointerMove);
+    window.removeEventListener('pointerup', onWindowPointerUp);
+    window.removeEventListener('pointercancel', onWindowPointerCancel);
+  }
+
+  const TAP_MOVE_THRESHOLD = 6; // px
+  const TAP_MAX_DURATION = 600; // ms
+
+  function onWindowPointerMove(e){
+    if(!dragState) return;
+    if(dragState.pointerId !== undefined && e.pointerId !== dragState.pointerId) return;
+    e.preventDefault();
+    armWatchdog();
+    const tile = dragState.tile;
+    const w = tile.offsetWidth, h = tile.offsetHeight;
+    let left = e.clientX - dragState.offsetX;
+    let top = e.clientY - dragState.offsetY;
+    left = Math.max(4, Math.min(left, window.innerWidth - w - 4));
+    top = Math.max(4, Math.min(top, window.innerHeight - h - 4));
+    tile.style.left = left + 'px';
+    tile.style.top = top + 'px';
+  }
+  function onWindowPointerUp(e){
+    if(!dragState) return;
+    if(dragState.pointerId !== undefined && e.pointerId !== dragState.pointerId) return;
+    const dx = e.clientX - dragState.startX;
+    const dy = e.clientY - dragState.startY;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const elapsed = Date.now() - dragState.startTime;
+    if(dist < TAP_MOVE_THRESHOLD && elapsed < TAP_MAX_DURATION){
+      finishTap();
+    } else {
+      finishDrop(e.clientX, e.clientY);
+    }
+  }
+  function onWindowPointerCancel(e){
+    if(!dragState) return;
+    if(dragState.pointerId !== undefined && e.pointerId !== dragState.pointerId) return;
+    cancelActiveDrag();
+  }
+
+  // Pure geometric hit-test against live bounding boxes — doesn't depend on
+  // elementFromPoint, z-order, or pointer-events toggling.
+  function hitTestDrop(clientX, clientY){
+    for(const slot of slotsEl.children){
+      const r = slot.getBoundingClientRect();
+      if(clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom){
+        return { type:'slot', el: slot };
+      }
+    }
+    const tr = trayEl.getBoundingClientRect();
+    if(clientX >= tr.left && clientX <= tr.right && clientY >= tr.top && clientY <= tr.bottom){
+      return { type:'tray', el: trayEl };
+    }
+    return null;
+  }
+
+  // FLIP-technique slide: pass the element's bounding rect from *before* it
+  // moved in the DOM, and it smoothly animates from there to its new spot.
+  function flipAnimate(el, beforeRect){
+    const afterRect = el.getBoundingClientRect();
+    const dx = beforeRect.left - afterRect.left;
+    const dy = beforeRect.top - afterRect.top;
+    if(!dx && !dy) return;
+    el.style.transition = 'none';
+    el.style.transform = `translate(${dx}px, ${dy}px)`;
+    void el.offsetWidth; // force reflow so the starting transform actually applies
+    requestAnimationFrame(() => {
+      el.style.transition = 'transform .32s cubic-bezier(.34,1.15,.64,1)';
+      el.style.transform = '';
+    });
+    const cleanup = () => {
+      el.style.transition = '';
+      el.style.transform = '';
+      el.removeEventListener('transitionend', cleanup);
+    };
+    el.addEventListener('transitionend', cleanup);
+  }
+
+  // Briefly rings both tiles involved in a swap so it's obvious which two moved.
+  function pulseSwap(el){
+    el.classList.remove('swap-pulse');
+    void el.offsetWidth;
+    el.classList.add('swap-pulse');
+    setTimeout(() => el.classList.remove('swap-pulse'), 650);
+  }
+
+  function finishDrop(clientX, clientY){
+    if(!dragState) return;
+    const { tile, placeholder, sourceParent } = dragState;
+    disarmWatchdog();
+    removeWindowDragListeners();
+
+    const hit = hitTestDrop(clientX, clientY);
+
+    cleanupTileStyle(tile);
+    document.body.classList.remove('dragging-active');
+    if(placeholder && placeholder.parentElement){
+      placeholder.parentElement.removeChild(placeholder);
+    }
+
+    let swapped = false;
+
+    if(hit && hit.type === 'slot'){
+      const slot = hit.el;
+      const existing = slot.querySelector('.tile');
+      if(existing && existing !== tile){
+        const beforeRect = existing.getBoundingClientRect();
+        sourceParent.appendChild(existing);
+        flipAnimate(existing, beforeRect);
+        pulseSwap(existing);
+        swapped = true;
+      }
+      const emptyHint = slot.querySelector('.empty-hint');
+      if(emptyHint) emptyHint.remove();
+      slot.appendChild(tile);
+    } else if(hit && hit.type === 'tray'){
+      trayEl.appendChild(tile);
+    } else {
+      sourceParent.appendChild(tile);
+    }
+
+    if(swapped) pulseSwap(tile);
+
+    refreshSlotFilledStates();
+    dragState = null;
+    updateSubmitState();
+  }
+
+  // Tap (as opposed to drag) shortcut: tapping a tray tile drops it into the
+  // earliest open slot; tapping an already-placed tile sends it back to the tray.
+  function finishTap(){
+    const { tile, placeholder, sourceParent } = dragState;
+    disarmWatchdog();
+    removeWindowDragListeners();
+    document.body.classList.remove('dragging-active');
+
+    const cameFromTray = sourceParent === trayEl;
+    const beforeRect = tile.getBoundingClientRect();
+
+    cleanupTileStyle(tile);
+    if(placeholder && placeholder.parentElement){
+      placeholder.parentElement.removeChild(placeholder);
+    }
+
+    if(cameFromTray){
+      const targetSlot = [...slotsEl.children].find(s => !s.querySelector('.tile'));
+      if(targetSlot){
+        const emptyHint = targetSlot.querySelector('.empty-hint');
+        if(emptyHint) emptyHint.remove();
+        targetSlot.appendChild(tile);
+        flipAnimate(tile, beforeRect);
+      } else {
+        sourceParent.appendChild(tile);
+      }
+    } else {
+      // tapped a tile that was sitting in a slot — send it back to the tray
+      trayEl.appendChild(tile);
+      flipAnimate(tile, beforeRect);
+    }
+
+    refreshSlotFilledStates();
+    dragState = null;
+    updateSubmitState();
+  }
+
+  function cancelActiveDrag(){
+    if(!dragState) return;
+    const { tile, placeholder } = dragState;
+    disarmWatchdog();
+    removeWindowDragListeners();
+    cleanupTileStyle(tile);
+    document.body.classList.remove('dragging-active');
+    if(placeholder && placeholder.parentElement){
+      placeholder.parentElement.replaceChild(tile, placeholder);
+    } else if(dragState.sourceParent){
+      dragState.sourceParent.appendChild(tile);
+    }
+    dragState = null;
+    refreshSlotFilledStates();
+    updateSubmitState();
+  }
+
+  function makeDraggable(tile){
+    tile.addEventListener('pointerdown', (e) => {
+      if(state.finished) return;
+      if(e.isPrimary === false) return; // ignore secondary touch points during a fast multi-touch flick
+      if(dragState) cancelActiveDrag(); // finalize any stale drag before starting a new one
+      e.preventDefault();
+
+      const rect = tile.getBoundingClientRect();
+      const sourceParent = tile.parentElement;
+      const placeholder = makePlaceholder(tile);
+      sourceParent.replaceChild(placeholder, tile);
+
+      dragState = {
+        tile,
+        pointerId: e.pointerId,
+        sourceParent,
+        placeholder,
+        offsetX: e.clientX - rect.left,
+        offsetY: e.clientY - rect.top,
+        startX: e.clientX,
+        startY: e.clientY,
+        startTime: Date.now()
+      };
+      document.body.classList.add('dragging-active');
+      tile.classList.add('dragging');
+      document.body.appendChild(tile);
+      tile.style.position = 'fixed';
+      tile.style.width = rect.width+'px';
+      tile.style.left = rect.left+'px';
+      tile.style.top = rect.top+'px';
+      tile.style.zIndex = 1000;
+
+      addWindowDragListeners();
+      armWatchdog();
+    });
+  }
+
+  // Extra failsafes: if the app is backgrounded or focus is lost mid-drag,
+  // don't leave a tile stranded — snap it back automatically.
+  window.addEventListener('blur', () => cancelActiveDrag());
+  document.addEventListener('visibilitychange', () => { if(document.hidden) cancelActiveDrag(); });
+
+  function cleanupTileStyle(tile){
+    tile.classList.remove('dragging');
+    tile.style.position = '';
+    tile.style.left = '';
+    tile.style.top = '';
+    tile.style.width = '';
+    tile.style.zIndex = '';
+    tile.style.pointerEvents = '';
+    tile.style.transform = '';
+    tile.style.transition = '';
+  }
+
+  function refreshSlotFilledStates(){
+    [...slotsEl.children].forEach(slot => {
+      const hasTile = !!slot.querySelector('.tile');
+      slot.classList.toggle('filled', hasTile);
+      if(hasTile){
+        const hint = slot.querySelector('.empty-hint');
+        if(hint) hint.remove();
+      } else if(!slot.querySelector('.empty-hint')){
+        const hint = document.createElement('span');
+        hint.className = 'empty-hint';
+        hint.textContent = 'drop here';
+        slot.appendChild(hint);
+      }
+    });
+    updateRailFill();
+  }
+
+  function updateSubmitState(){
+    const filled = [...slotsEl.children].every(s => s.querySelector('.tile'));
+    submitBtn.disabled = !filled || state.finished;
+  }
+
+  resetRoundBtn.addEventListener('click', () => {
+    if(state.finished) return;
+    cancelActiveDrag();
+    // robust recovery: gather every tile/placeholder belonging to this round from
+    // anywhere in the document (including any stuck on <body>) and restore them to the tray.
+    const roundIdx = state.currentRound;
+    document.querySelectorAll('.tile-placeholder').forEach(ph => ph.remove());
+    document.querySelectorAll(`.tile[data-round="${roundIdx}"]`).forEach(tile => {
+      cleanupTileStyle(tile);
+      tile.classList.remove('revealed','pop','swap-pulse');
+      trayEl.appendChild(tile);
+    });
+    slotsEl.querySelectorAll('.slot').forEach(s => s.classList.remove('correct','wrong'));
+    railFill.classList.remove('success');
+    refreshSlotFilledStates();
+    updateSubmitState();
+  });
+
+  /* ============ SUBMIT / SCORING ============ */
+  function checkAnswer(){
+    const slots = [...slotsEl.children];
+    const round = state.rounds[state.currentRound];
+    const correctOrder = round.items
+      .map((_, idx) => idx)
+      .sort((a,b) => round.items[a].sortValue - round.items[b].sortValue);
+    const placedOrder = slots.map(s => Number(s.querySelector('.tile').dataset.idx));
+    const isCorrect = placedOrder.every((v,i) => v === correctOrder[i]);
+    return { isCorrect, slots, correctOrder };
+  }
+
+  function shakeScreen(){
+    const appEl = $("app");
+    appEl.classList.remove('shake');
+    void appEl.offsetWidth;
+    appEl.classList.add('shake');
+  }
+
+  submitBtn.addEventListener('click', () => {
+    if(state.finished) return;
+    const { isCorrect, slots, correctOrder } = checkAnswer();
+    const round = state.rounds[state.currentRound];
+
+    if(isCorrect){
+      slots.forEach(s => s.classList.add('correct'));
+      railFill.style.height = "100%";
+      railFill.classList.add('success');
+      slots.forEach(s => {
+        const t = s.querySelector('.tile');
+        t.classList.add('revealed');
+        t.classList.add('pop');
+      });
+      state.roundCompleted[state.currentRound] = true;
+      state.lastCompletedCategory = round.categoryKey;
+      state.solvedRounds[state.currentRound] = correctOrder.map(idx => ({
+        label: round.items[idx].label,
+        year: Math.floor(round.items[idx].sortValue)
+      }));
+      submitBtn.disabled = true;
+      setTimeout(() => {
+        if(state.currentRound < TOTAL_ROUNDS-1){
+          state.currentRound++;
+          loadRound(state.currentRound);
+        } else {
+          endGame(true);
+        }
+      }, 1100);
+    } else {
+      slots.forEach((s,i) => {
+        const t = s.querySelector('.tile');
+        const idx = Number(t.dataset.idx);
+        s.classList.add(idx === correctOrder[i] ? 'correct' : 'wrong');
+      });
+      shakeScreen();
+      state.roundMistakes[state.currentRound]++;
+      state.lives--;
+      renderLives();
+      setTimeout(() => {
+        slots.forEach(s => s.classList.remove('correct','wrong'));
+      }, 650);
+      if(state.lives <= 0){
+        submitBtn.disabled = true;
+        setTimeout(() => endGame(false), 700);
+      }
+    }
+  });
+
+  /* ============ END GAME / RESULTS ============ */
+  function computeEmojiGrid(finalState){
+    const themeKey = finalState.lastCompletedCategory || finalState.categories[0];
+    const theme = CATEGORIES[themeKey];
+    const emojis = finalState.categories.map((catKey, i) => {
+      if(!finalState.roundCompleted[i]) return "⬛";
+      const m = finalState.roundMistakes[i];
+      const tier = m === 0 ? 0 : (m <= 2 ? 1 : 2);
+      return theme.emojis[tier];
+    });
+    return { emojis, theme };
+  }
+
+  function endGame(won){
+    state.finished = true;
+    state.won = won;
+    if(state.timerHandle) clearInterval(state.timerHandle);
+    state.elapsedMs = Date.now() - state.startTime;
+
+    const roundsCompleted = state.roundCompleted.filter(Boolean).length;
+    const result = {
+      dateStr: state.dateStr,
+      roundsCompleted,
+      totalRounds: TOTAL_ROUNDS,
+      roundMistakes: state.roundMistakes,
+      roundCompleted: state.roundCompleted,
+      solvedRounds: state.solvedRounds,
+      categories: state.rounds.map(r => r.categoryKey),
+      livesLeft: state.lives,
+      timeMs: state.elapsedMs,
+      won,
+      lastCompletedCategory: state.lastCompletedCategory
+    };
+    saveResult(state.dateStr, result);
+    showResultScreen(result);
+  }
+
+  function renderReview(result){
+    const panel = $("reviewPanel");
+    panel.innerHTML = "";
+    const solved = result.solvedRounds || [];
+    let any = false;
+    result.categories.forEach((catKey, i) => {
+      const items = solved[i];
+      if(!items) return;
+      any = true;
+      const cat = CATEGORIES[catKey];
+      const div = document.createElement('div');
+      div.className = 'review-round';
+      const head = document.createElement('div');
+      head.className = 'rr-head';
+      head.textContent = `${cat.icon} ${cat.name}`;
+      div.appendChild(head);
+      const itemsWrap = document.createElement('div');
+      itemsWrap.className = 'rr-items';
+      items.forEach(it => {
+        const row = document.createElement('div');
+        row.className = 'review-item';
+        row.innerHTML = `<b>${it.label}</b><span class="yr">${it.year}</span>`;
+        itemsWrap.appendChild(row);
+      });
+      div.appendChild(itemsWrap);
+      panel.appendChild(div);
+    });
+    if(!any){
+      panel.innerHTML = '<div class="review-empty">No rounds were completed this session.</div>';
+    }
+  }
+
+  function showResultScreen(result){
+    const { emojis } = computeEmojiGrid(result);
+
+    $("resultHeadline").textContent = result.won ? "🏆" : "⏳";
+    $("resultTitle").textContent = result.won ? "Puzzle complete!" : "Out of lives";
+    $("resultSub").textContent = result.won
+      ? `You solved all ${result.totalRounds} rounds.`
+      : `You made it through ${result.roundsCompleted} of ${result.totalRounds} rounds.`;
+    $("resultGrid").textContent = emojis.join(" ");
+    $("statRounds").textContent = `${result.roundsCompleted}/${result.totalRounds}`;
+    $("statLives").textContent = result.livesLeft;
+    $("statTime").textContent = fmtTime(result.timeMs);
+
+    renderReview(result);
+
+    resultOverlay.dataset.puzzleNum = puzzleNumber(result.dateStr);
+    resultOverlay.dataset.emojis = emojis.join(" ");
+    resultOverlay.dataset.rounds = `${result.roundsCompleted}/${result.totalRounds}`;
+    resultOverlay.dataset.lives = result.livesLeft;
+    resultOverlay.dataset.time = fmtTime(result.timeMs);
+
+    openOverlay(resultOverlay);
+  }
+
+  $("shareBtn").addEventListener('click', () => {
+    const d = resultOverlay.dataset;
+    const text = `Flashpoint #${d.puzzleNum} — ${d.rounds} rounds\n${d.emojis}\n❤️ x${d.lives}   ⏱ ${d.time}`;
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(showToast).catch(() => fallbackCopy(text));
+    } else {
+      fallbackCopy(text);
+    }
+  });
+
+  function fallbackCopy(text){
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand('copy'); showToast(); }catch(e){}
+    document.body.removeChild(ta);
+  }
+
+  function showToast(){
+    toastEl.textContent = "Copied to clipboard!";
+    toastEl.classList.add('show');
+    setTimeout(() => toastEl.classList.remove('show'), 1800);
+  }
+
+  /* ============ OVERLAY HELPERS ============ */
+  function openOverlay(el){ el.classList.add('show'); }
+  function closeOverlay(el){ el.classList.remove('show'); }
+
+  $("closeResultBtn").addEventListener('click', () => closeOverlay(resultOverlay));
+  $("infoBtn").addEventListener('click', () => openOverlay(infoOverlay));
+  $("closeInfoBtn").addEventListener('click', () => closeOverlay(infoOverlay));
+  $("archiveBtn").addEventListener('click', () => { renderArchive(); openOverlay(archiveOverlay); });
+  $("closeArchiveBtn").addEventListener('click', () => closeOverlay(archiveOverlay));
+  [resultOverlay, archiveOverlay, infoOverlay].forEach(ov => {
+    ov.addEventListener('click', (e) => { if(e.target === ov) closeOverlay(ov); });
+  });
+
+  /* ============ ARCHIVE ============ */
+  function renderArchive(){
+    const list = $("archiveList");
+    list.innerHTML = "";
+    const results = loadResults();
+    const start = new Date(LAUNCH_DATE+"T00:00:00");
+    const end = new Date(todayStr()+"T00:00:00");
+    const days = [];
+    for(let d = new Date(end); d >= start; d.setDate(d.getDate()-1)){
+      days.push(dateStrOf(d));
+    }
+    days.forEach(ds => {
+      const row = document.createElement('div');
+      row.className = 'archive-row';
+      const res = results[ds];
+      const dObj = new Date(ds+"T00:00:00");
+      const label = dObj.toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' });
+      row.innerHTML = `
+        <div class="d">
+          <span class="date">${label}${ds===todayStr() ? " (today)" : ""}</span>
+          <span class="num">Puzzle #${String(puzzleNumber(ds)).padStart(3,'0')}</span>
+        </div>
+        <span class="status">${res ? (res.won ? "✅" : "🔺") : "▫️"}</span>
+      `;
+      row.addEventListener('click', () => {
+        closeOverlay(archiveOverlay);
+        goToDate(ds);
+      });
+      list.appendChild(row);
+    });
+  }
+
+  /* ============ GAME BOOT / NAVIGATION ============ */
+  function goToDate(dateStr){
+    if(state && state.timerHandle) clearInterval(state.timerHandle);
+    disarmWatchdog();
+    removeWindowDragListeners();
+    dragState = null;
+    const results = loadResults();
+    const existing = results[dateStr];
+
+    if(existing){
+      state = newState(dateStr);
+      state.finished = true;
+      state.currentRound = existing.roundsCompleted;
+      state.lives = existing.livesLeft;
+      state.roundMistakes = existing.roundMistakes;
+      state.roundCompleted = existing.roundCompleted;
+      state.solvedRounds = existing.solvedRounds || [null,null,null,null,null];
+      state.lastCompletedCategory = existing.lastCompletedCategory;
+      state.elapsedMs = existing.timeMs;
+      renderStatus();
+      renderLives();
+      timerStat.textContent = fmtTime(existing.timeMs);
+      loadRound(Math.min(existing.roundsCompleted, TOTAL_ROUNDS-1));
+      showResultScreen(existing);
+      return;
+    }
+
+    state = newState(dateStr);
+    renderLives();
+    renderStatus();
+    loadRound(0);
+    timerStat.textContent = "00:00";
+    state.timerHandle = setInterval(tickTimer, 250);
+    closeOverlay(resultOverlay);
+  }
+
+  goToDate(todayStr());
+
+})();
+</script>
+</body>
+</html>
