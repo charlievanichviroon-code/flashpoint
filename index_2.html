@@ -1,0 +1,2646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Flashpoint — Daily Chronology Puzzle</title>
+
+<!-- Google Analytics (GA4) — replace G-XXXXXXXXXX below with your own Measurement ID
+     from analytics.google.com once you've created a property (see setup steps in chat). -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX');
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Palette sampled directly from an Outlier.land recording: warm cream base,
+       thick black outlines, mustard-yellow + lavender-purple + coral-red as the
+       three functional accents (purple reads "correct", not green). */
+    --bg: #FBF6E9;
+    --bg-grad: none;
+    --surface: #FFFFFF;
+    --surface-2: #FDF9EE;
+    --rail: #E4DCC5;
+    --border: #1A1712;
+    --accent: #F9D65C;
+    --accent-2: #F0C23A;
+    --accent-gradient: linear-gradient(135deg, #FBE18C 0%, #F9D65C 100%);
+    --accent-soft: rgba(249,214,92,0.28);
+    --accent-dim: #EFDFA0;
+    --secondary: #B4AEF5;
+    --secondary-soft: rgba(180,174,245,0.28);
+    --secondary-dim: #C9C4F8;
+    --success: #B4AEF5;
+    --success-soft: rgba(180,174,245,0.28);
+    --danger: #F2775A;
+    --danger-soft: rgba(242,119,90,0.22);
+    --text: #1A1712;
+    --text-muted: #6B6558;
+    --text-faint: #A39C8C;
+    --font-display: 'Baloo 2', sans-serif;
+    --font-body: 'Nunito', sans-serif;
+    --font-mono: 'Baloo 2', sans-serif;
+    --radius: 18px;
+  }
+
+  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html,body{ height:100%; overscroll-behavior: none; }
+  body{
+    margin:0;
+    background: var(--bg-grad), var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    -webkit-font-smoothing: antialiased;
+    overflow-x:hidden;
+  }
+  /* Locks page scroll while a tile is actively being dragged, so a fast flick
+     can't trigger a native scroll that desyncs drop-target coordinates. */
+  body.dragging-active{
+    overflow: hidden;
+    touch-action: none;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+
+  #app{
+    width:100%;
+    max-width:560px;
+    min-height:100vh;
+    padding: max(16px, env(safe-area-inset-top)) 14px calc(16px + env(safe-area-inset-bottom));
+    display:flex;
+    flex-direction:column;
+    position:relative;
+  }
+
+  /* ---------- Header ---------- */
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:6px;
+    gap:8px;
+  }
+  .brand{
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+    min-width:0;
+  }
+  .brand .bolt{
+    font-size: clamp(16px, 4.8vw, 19px);
+  }
+  .brand h1{
+    font-family: var(--font-display);
+    font-size: clamp(18px, 5.2vw, 23px);
+    letter-spacing: 0.2px;
+    margin:0;
+    font-weight:800;
+    white-space:nowrap;
+    color: var(--text);
+  }
+  .brand .puzzle-no{
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--text-muted);
+    white-space:nowrap;
+  }
+  .icon-btn{
+    background: var(--surface);
+    border: 2px solid var(--border);
+    color: var(--text);
+    width:38px; height:38px;
+    flex-shrink:0;
+    border-radius: 10px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    font-size:15px;
+    box-shadow: 0 1px 3px rgba(16,16,20,0.06);
+    transition: transform .15s ease, background .15s ease, border-color .15s ease;
+  }
+  .icon-btn:hover{ background: var(--surface-2); border-color: var(--accent-dim); }
+  .icon-btn:active{ transform: scale(0.93); }
+
+  .statusbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background: var(--surface);
+    border:2px solid var(--border);
+    border-radius: 12px;
+    padding: 9px 12px;
+    margin-top: 12px;
+    margin-bottom: 16px;
+    gap:6px;
+  }
+  .lives{ display:flex; gap:4px; }
+  .lives span{
+    width:14px; height:14px;
+    border-radius:4px;
+    border: 2px solid var(--border);
+    background: var(--surface);
+    display:inline-block;
+    transition: background .15s ease;
+  }
+  .lives span.used{ background: var(--danger); }
+  .stat{
+    display:flex; flex-direction:column; align-items:center; gap:1px;
+    flex-shrink:0;
+  }
+  .stat .label{ font-size:8.5px; text-transform:uppercase; letter-spacing:1px; color:var(--text-faint); }
+  .stat .value{ font-family: var(--font-mono); font-size:13px; font-weight:600; color:var(--text); }
+
+  /* ---------- Category / prompt ---------- */
+  .category-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    align-self:flex-start;
+    background: var(--surface);
+    color: var(--text);
+    border: 2px solid var(--border);
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight:700;
+    letter-spacing:0.3px;
+    margin-bottom: 9px;
+  }
+  .prompt{
+    font-family: var(--font-display);
+    font-size: clamp(15.5px, 4.4vw, 18px);
+    font-weight: 600;
+    line-height:1.35;
+    margin: 0 0 18px;
+    color: var(--text);
+  }
+  .prompt .muted{ color:var(--text-muted); font-weight:500; }
+
+  /* ---------- Vertical timeline rail (signature element) ---------- */
+  .rail-wrap{ margin-bottom: 18px; }
+  .rail-endcap{
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 1.5px;
+    color: var(--text-faint);
+    padding: 0 0 6px 34px;
+  }
+  .rail-endcap.bottom{ padding: 6px 0 0 34px; }
+  .rail{
+    position:relative;
+    padding-left: 34px;
+  }
+  .rail-line{
+    position:absolute;
+    top: 6px;
+    bottom: 6px;
+    left: 14px;
+    width: 2px;
+    background: var(--rail);
+    border-radius:2px;
+  }
+  .rail-line .fill{
+    position:absolute; top:0; left:0; width:100%; height:0%;
+    background: var(--accent);
+    border-radius:2px;
+    transition: height .35s cubic-bezier(.4,0,.2,1), background .25s ease;
+  }
+  .rail-line .fill.success{ background: var(--success); }
+  .slots{
+    position:relative;
+    z-index:1;
+    display:flex;
+    flex-direction:column;
+    gap: 9px;
+  }
+  .slot{
+    min-height: 54px;
+    background: var(--surface-2);
+    border: 2px dashed #C9BE9C;
+    border-radius: 14px;
+    display:flex;
+    align-items:center;
+    position:relative;
+    padding: 10px 12px;
+    transition: border-color .2s ease, background .2s ease;
+  }
+  .slot::before{
+    content: attr(data-ord-num);
+    position:absolute;
+    left: -34px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px; height:24px;
+    border-radius:8px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-display);
+    font-weight:700;
+    font-size: 11px;
+    display:flex; align-items:center; justify-content:center;
+    transition: border-color .2s ease, color .2s ease, background .2s ease;
+  }
+  .slot.filled{ border-style:solid; border-color: var(--border); background: var(--surface); }
+  .slot.filled::before{ background: var(--accent); }
+  .slot.correct{ border-color: var(--border); background: var(--secondary-soft); }
+  .slot.correct::before{ background: var(--secondary); }
+  .slot.wrong{ border-color: var(--border); background: var(--danger-soft); }
+  .slot.wrong::before{ background: var(--danger); }
+  .slot .empty-hint{ color: var(--text-faint); font-size:12px; font-style:italic; }
+
+  .tile{
+    touch-action: none;
+    user-select:none;
+    -webkit-user-select:none;
+    background: var(--surface-2);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 10px 10px;
+    font-size: 12.5px;
+    font-weight:600;
+    font-family: var(--font-body);
+    line-height:1.25;
+    text-align:left;
+    color: var(--text);
+    cursor: grab;
+    width: 100%;
+    box-shadow: 0 1px 2px rgba(16,16,20,0.05);
+    transition: box-shadow .15s ease, border-color .15s ease;
+  }
+  .slot .tile{ background: var(--surface); }
+  .tile .year-reveal{
+    display:inline-block;
+    margin-left:6px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--accent);
+    opacity:0;
+    transition: opacity .3s ease;
+  }
+  .tile.revealed .year-reveal{ opacity:1; }
+  .tile.dragging{
+    cursor:grabbing;
+    box-shadow: 0 12px 24px rgba(16,16,20,0.14), 0 0 0 2px var(--accent);
+    border-color: var(--accent);
+    opacity: 0.98;
+  }
+  .tile-placeholder{
+    border-radius:10px;
+    background: var(--surface-2);
+    border: 1px dashed var(--rail);
+    opacity: 0.5;
+  }
+
+  .tray{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(148px,1fr));
+    gap:8px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 12px;
+    min-height: 60px;
+    margin-bottom: 16px;
+    align-content:start;
+  }
+  @media (max-width:380px){
+    .tray{ grid-template-columns: 1fr 1fr; }
+  }
+  .tray-empty-hint{
+    font-size:12px; color:var(--text-faint); margin:auto; text-align:center; grid-column: 1/-1;
+    font-style:italic;
+  }
+
+  .actions{
+    display:flex;
+    gap:10px;
+    margin-top:auto;
+    position: sticky;
+    bottom: 0;
+    padding: 10px 0 2px;
+    background: linear-gradient(to top, var(--bg) 65%, transparent);
+  }
+  .btn{
+    flex:1;
+    border:none;
+    border-radius: 999px;
+    padding: 14px;
+    font-family: var(--font-display);
+    font-weight:700;
+    font-size:14.5px;
+    letter-spacing:0.3px;
+    cursor:pointer;
+    transition: transform .1s ease, opacity .2s ease, background .2s ease, box-shadow .1s ease;
+    min-height:48px;
+  }
+  .btn-primary{
+    background: var(--secondary);
+    color: var(--text);
+    border: 2.5px solid var(--border);
+    box-shadow: 0 4px 0 var(--border);
+  }
+  .btn-primary:active{ box-shadow: 0 1px 0 var(--border); transform: translateY(3px); }
+  .btn-primary:disabled{
+    opacity:0.4;
+    cursor:not-allowed;
+  }
+  .btn-ghost{
+    background: var(--surface);
+    border:2.5px solid var(--border);
+    color: var(--text);
+    flex: 0 0 auto;
+    width: 48px;
+    box-shadow: 0 4px 0 var(--border);
+  }
+  .btn-ghost:active{ box-shadow: 0 1px 0 var(--border); transform: translateY(3px); }
+
+  /* ---------- shake ---------- */
+  @keyframes shake{
+    10%,90% { transform: translateX(-1px); }
+    20%,80% { transform: translateX(2px); }
+    30%,50%,70% { transform: translateX(-6px); }
+    40%,60% { transform: translateX(6px); }
+  }
+  .shake{ animation: shake 0.5s cubic-bezier(.36,.07,.19,.97); }
+
+  @keyframes pop{
+    0%{ transform: scale(1); }
+    40%{ transform: scale(1.03); }
+    100%{ transform: scale(1); }
+  }
+  .pop{ animation: pop .4s ease; }
+
+  /* Highlights the two tiles that just swapped places. Deliberately only
+     touches box-shadow/border-color (never transform), so it can run at the
+     same time as the FLIP slide animation without fighting over the same
+     CSS property. */
+  @keyframes swapPulse{
+    0%{ box-shadow: 0 0 0 0 rgba(249,214,92,0.7); border-color: var(--border); }
+    60%{ box-shadow: 0 0 0 9px rgba(249,214,92,0); border-color: var(--border); }
+    100%{ box-shadow: 0 0 0 0 rgba(249,214,92,0); }
+  }
+  .tile.swap-pulse{ animation: swapPulse .6s ease-out; }
+
+  /* ---------- Overlays ---------- */
+  .overlay{
+    position:fixed; inset:0;
+    background: rgba(16,16,20,0.45);
+    backdrop-filter: blur(4px);
+    display:flex; align-items:center; justify-content:center;
+    z-index: 50;
+    padding: 16px;
+    opacity:0;
+    pointer-events:none;
+    transition: opacity .25s ease;
+  }
+  .overlay.show{ opacity:1; pointer-events:auto; }
+  .modal{
+    background: var(--surface);
+    border:2.5px solid var(--border);
+    border-radius: 22px;
+    width:100%;
+    max-width: 420px;
+    max-height: 86vh;
+    overflow-y:auto;
+    padding: 20px;
+    box-shadow: 0 20px 44px rgba(16,16,20,0.16);
+    transform: translateY(14px) scale(0.98);
+    transition: transform .25s ease;
+  }
+  .overlay.show .modal{ transform: translateY(0) scale(1); }
+  .modal h2{
+    font-family: var(--font-display);
+    margin: 0 0 4px;
+    font-size:24px;
+    font-weight:800;
+  }
+  .modal .sub{ color:var(--text-muted); font-size:12.5px; margin-bottom:16px; }
+  .modal-close{
+    float:right;
+    background:none; border:none; color:var(--text-muted);
+    font-size:18px; cursor:pointer;
+    padding:4px;
+  }
+
+  /* result screen */
+  .result-hero{ text-align:center; padding: 4px 0 14px; }
+  @keyframes resultBounce{
+    0%{ transform: scale(0.85); opacity:0; }
+    100%{ transform: scale(1); opacity:1; }
+  }
+  .result-emoji{ font-size:36px; margin-bottom:6px; animation: resultBounce .3s ease-out; }
+  .result-emoji-grid{
+    font-size: 24px;
+    letter-spacing: 5px;
+    margin: 8px 0 14px;
+  }
+  .result-stats{
+    display:grid;
+    grid-template-columns: repeat(3,1fr);
+    gap:8px;
+    margin-bottom:16px;
+  }
+  .result-stats .box{
+    background: var(--surface-2);
+    border:2px solid var(--border);
+    border-radius:14px;
+    padding: 10px 6px;
+    text-align:center;
+  }
+  .result-stats .box .n{ font-family:var(--font-mono); font-size:17px; font-weight:600; }
+  .result-stats .box .l{ font-size:9px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.8px; margin-top:2px;}
+
+  .review-heading{
+    font-family: var(--font-display);
+    font-size:14px;
+    font-weight:700;
+    margin: 4px 0 10px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .review-round{ margin-bottom:14px; }
+  .review-round .rr-head{
+    display:flex; align-items:center; gap:6px;
+    font-size:12px; font-weight:700; margin-bottom:6px; color:var(--text);
+  }
+  .review-round .rr-items{
+    display:flex; flex-direction:column; gap:4px;
+    padding-left:10px; border-left:2px solid var(--rail);
+  }
+  .review-item{
+    display:flex; justify-content:space-between; align-items:baseline; gap:8px;
+    font-size:11.5px; color:var(--text-muted);
+    background:var(--surface-2); border-radius:8px; padding:6px 9px;
+  }
+  .review-item b{ color:var(--text); font-weight:600; font-size:12px; }
+  .review-item .yr{ font-family:var(--font-mono); color:var(--accent); font-weight:600; flex-shrink:0; }
+  .review-empty{ font-size:12px; color:var(--text-faint); text-align:center; padding:10px 0; font-style:italic; }
+
+  .toast{
+    position:fixed;
+    bottom: calc(22px + env(safe-area-inset-bottom)); left:50%;
+    transform: translateX(-50%) translateY(12px);
+    background: var(--surface);
+    border: 2px solid var(--border);
+    color: var(--text);
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size:13px;
+    font-weight:700;
+    z-index: 80;
+    opacity:0;
+    box-shadow: 0 8px 20px rgba(16,16,20,0.14);
+    transition: opacity .25s ease, transform .25s ease;
+    pointer-events:none;
+  }
+  .toast.show{ opacity:1; transform: translateX(-50%) translateY(0); }
+
+  /* archive list */
+  .archive-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 11px 4px;
+    border-bottom: 1px solid var(--border);
+    cursor:pointer;
+  }
+  .archive-row:last-child{ border-bottom:none; }
+  .archive-row:hover{ background: var(--surface-2); }
+  .archive-row .d{ display:flex; flex-direction:column; }
+  .archive-row .date{ font-size:13px; font-weight:600; }
+  .archive-row .num{ font-size:10.5px; color:var(--text-faint); font-family:var(--font-mono); }
+  .archive-row .status{ font-size: 16px; }
+
+  .rules-list{ font-size:13px; line-height:1.7; color: var(--text-muted); padding-left:18px; margin:0; }
+  .rules-list li{ margin-bottom:6px; }
+  .rules-list b{ color:var(--text); }
+
+  footer.hint{
+    text-align:center;
+    color: var(--text-faint);
+    font-size:11px;
+    margin-top:10px;
+  }
+
+  ::-webkit-scrollbar{ width:8px; }
+  ::-webkit-scrollbar-thumb{ background:#E4DCC5; border-radius:8px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <span class="bolt">⚡</span>
+      <h1>FLASHPOINT</h1>
+      <span class="puzzle-no" id="puzzleNo">#000</span>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="icon-btn" id="infoBtn" title="How to play">?</button>
+      <button class="icon-btn" id="archiveBtn" title="Archive">🗂</button>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <div class="lives" id="livesRow"></div>
+    <div class="stat"><span class="label">Round</span><span class="value" id="roundStat">1/5</span></div>
+    <div class="stat"><span class="label">Time</span><span class="value" id="timerStat">00:00</span></div>
+  </div>
+
+  <div id="gameScreen">
+    <span class="category-pill" id="categoryPill">— —</span>
+    <p class="prompt" id="promptText">Loading today's puzzle…</p>
+
+    <div class="rail-wrap">
+      <div class="rail-endcap">↑ EARLIEST</div>
+      <div class="rail">
+        <div class="rail-line"><div class="fill" id="railFill"></div></div>
+        <div class="slots" id="slots"></div>
+      </div>
+      <div class="rail-endcap bottom">↓ LATEST</div>
+    </div>
+
+    <div class="tray" id="tray"></div>
+
+    <div class="actions">
+      <button class="btn btn-ghost" id="resetRoundBtn" title="Reset this round">↺</button>
+      <button class="btn btn-primary" id="submitBtn" disabled>Check Order</button>
+    </div>
+  </div>
+
+  <footer class="hint">Drag tiles onto the rail — or tap one to drop it in the next open slot.</footer>
+</div>
+
+<!-- Result overlay -->
+<div class="overlay" id="resultOverlay">
+  <div class="modal">
+    <div class="result-hero">
+      <div class="result-emoji" id="resultHeadline">🏆</div>
+      <h2 id="resultTitle">Puzzle complete</h2>
+      <div class="sub" id="resultSub">Nice work today.</div>
+      <div class="result-emoji-grid" id="resultGrid"></div>
+    </div>
+    <div class="result-stats">
+      <div class="box"><div class="n" id="statRounds">0/5</div><div class="l">Rounds</div></div>
+      <div class="box"><div class="n" id="statLives">7</div><div class="l">Lives left</div></div>
+      <div class="box"><div class="n" id="statTime">00:00</div><div class="l">Time</div></div>
+    </div>
+
+    <div class="review-heading">🔎 Admire your timelines</div>
+    <div id="reviewPanel"></div>
+
+    <div class="actions" style="position:static; background:none; margin-top:14px;">
+      <button class="btn btn-ghost" id="closeResultBtn">✕</button>
+      <button class="btn btn-primary" id="shareBtn">Share Results</button>
+    </div>
+  </div>
+</div>
+
+<!-- Archive overlay -->
+<div class="overlay" id="archiveOverlay">
+  <div class="modal">
+    <button class="modal-close" id="closeArchiveBtn">✕</button>
+    <h2>Archive</h2>
+    <div class="sub">Play or revisit any past day's puzzle.</div>
+    <div id="archiveList"></div>
+  </div>
+</div>
+
+<!-- Info overlay -->
+<div class="overlay" id="infoOverlay">
+  <div class="modal">
+    <button class="modal-close" id="closeInfoBtn">✕</button>
+    <h2>How to play</h2>
+    <div class="sub">5 rounds. 7 lives. One set of milestones a day.</div>
+    <ul class="rules-list">
+      <li>Drag the 5 tiles onto the rail in chronological order, earliest at the top.</li>
+      <li>Tap Check Order when all 5 slots are filled.</li>
+      <li>A wrong order costs 1 life — you can keep adjusting and retry.</li>
+      <li>Run out of 7 lives and your run ends for the day.</li>
+      <li>Solve all 5 rounds to win. Difficulty rises each round, and the category never repeats from the day before.</li>
+      <li>When you finish (or run out of lives), you can review every timeline you solved that session.</li>
+      <li>Use Share Results to copy a spoiler-free emoji recap, themed to your last solved category.</li>
+      <li>Missed a day? Catch up anytime in the Archive.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="toast" id="toast">Copied to clipboard!</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============ SEEDED RNG ============ */
+  function xmur3(str){
+    let h = 1779033703 ^ str.length;
+    for(let i=0;i<str.length;i++){
+      h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+      h = (h << 13) | (h >>> 19);
+    }
+    return function(){
+      h = Math.imul(h ^ (h >>> 16), 2246822507);
+      h = Math.imul(h ^ (h >>> 13), 3266489909);
+      h ^= h >>> 16;
+      return h >>> 0;
+    };
+  }
+  function mulberry32(a){
+    return function(){
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function rngFromSeed(seedStr){
+    const gen = xmur3(seedStr);
+    return mulberry32(gen());
+  }
+  function seededShuffle(arr, rng){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(rng()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+
+  /* ============ CONFIG ============ */
+  const LAUNCH_DATE = "2026-08-01";
+
+  function dateStrOf(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+  function todayStr(){ return dateStrOf(new Date()); }
+  function puzzleNumber(ds){
+    const start = new Date(LAUNCH_DATE+"T00:00:00");
+    const cur = new Date(ds+"T00:00:00");
+    const diff = Math.round((cur-start)/86400000);
+    return diff+1;
+  }
+
+  /* ============ CATEGORY DATA ============ */
+  const CATEGORIES = {
+    harrypotter: {
+      name:"Harry Potter", icon:"⚡",
+      prompt:"Arrange these Harry Potter films by U.S. release date.",
+      emojis:["⚡","🪄","🦉"],
+      items:[
+        {label:"Harry Potter and the Sorcerer's Stone", sortValue:2001.917},
+        {label:"Harry Potter and the Chamber of Secrets", sortValue:2002.917},
+        {label:"Harry Potter and the Prisoner of Azkaban", sortValue:2004.417},
+        {label:"Harry Potter and the Goblet of Fire", sortValue:2005.917},
+        {label:"Harry Potter and the Order of the Phoenix", sortValue:2007.5},
+        {label:"Harry Potter and the Half-Blood Prince", sortValue:2009.5},
+        {label:"Harry Potter and the Deathly Hallows – Part 1", sortValue:2010.917},
+        {label:"Harry Potter and the Deathly Hallows – Part 2", sortValue:2011.5}
+      ]
+    },
+    starwars: {
+      name:"Star Wars", icon:"🌟",
+      prompt:"Arrange these Star Wars films by original theatrical release date.",
+      emojis:["🌟","🚀","🤖"],
+      items:[
+        {label:"Star Wars: A New Hope", sortValue:1977.33},
+        {label:"Star Wars: The Empire Strikes Back", sortValue:1980.33},
+        {label:"Star Wars: Return of the Jedi", sortValue:1983.33},
+        {label:"Star Wars: The Phantom Menace", sortValue:1999.33},
+        {label:"Star Wars: Attack of the Clones", sortValue:2002.33},
+        {label:"Star Wars: Revenge of the Sith", sortValue:2005.33},
+        {label:"Star Wars: The Force Awakens", sortValue:2015.917},
+        {label:"Rogue One: A Star Wars Story", sortValue:2016.917},
+        {label:"Star Wars: The Last Jedi", sortValue:2017.917},
+        {label:"Solo: A Star Wars Story", sortValue:2018.33},
+        {label:"Star Wars: The Rise of Skywalker", sortValue:2019.917}
+      ]
+    },
+    marvel: {
+      name:"Marvel Studios", icon:"🛡️",
+      prompt:"Arrange these Marvel Studios films by U.S. theatrical release date.",
+      emojis:["🛡️","⚛️","💥"],
+      items:[
+        {label:"Iron Man", sortValue:2008.33},
+        {label:"The Incredible Hulk", sortValue:2008.5},
+        {label:"Iron Man 2", sortValue:2010.33},
+        {label:"Thor", sortValue:2011.33},
+        {label:"Captain America: The First Avenger", sortValue:2011.58},
+        {label:"The Avengers", sortValue:2012.33},
+        {label:"Iron Man 3", sortValue:2013.33},
+        {label:"Thor: The Dark World", sortValue:2013.83},
+        {label:"Captain America: The Winter Soldier", sortValue:2014.17},
+        {label:"Guardians of the Galaxy", sortValue:2014.58},
+        {label:"Avengers: Age of Ultron", sortValue:2015.33},
+        {label:"Ant-Man", sortValue:2015.58},
+        {label:"Captain America: Civil War", sortValue:2016.33},
+        {label:"Doctor Strange", sortValue:2016.83},
+        {label:"Guardians of the Galaxy Vol. 2", sortValue:2017.33},
+        {label:"Spider-Man: Homecoming", sortValue:2017.5},
+        {label:"Thor: Ragnarok", sortValue:2017.83},
+        {label:"Black Panther", sortValue:2018.08},
+        {label:"Avengers: Infinity War", sortValue:2018.25},
+        {label:"Ant-Man and the Wasp", sortValue:2018.5},
+        {label:"Captain Marvel", sortValue:2019.17},
+        {label:"Avengers: Endgame", sortValue:2019.25},
+        {label:"Spider-Man: Far From Home", sortValue:2019.5}
+      ]
+    },
+    pixar: {
+      name:"Pixar", icon:"🎈",
+      prompt:"Arrange these Pixar films by U.S. release date.",
+      emojis:["🎈","🧸","🌈"],
+      items:[
+        {label:"Toy Story", sortValue:1995.917},
+        {label:"A Bug's Life", sortValue:1998.917},
+        {label:"Toy Story 2", sortValue:1999.917},
+        {label:"Monsters, Inc.", sortValue:2001.917},
+        {label:"Finding Nemo", sortValue:2003.42},
+        {label:"The Incredibles", sortValue:2004.917},
+        {label:"Cars", sortValue:2006.42},
+        {label:"Ratatouille", sortValue:2007.42},
+        {label:"WALL-E", sortValue:2008.42},
+        {label:"Up", sortValue:2009.33},
+        {label:"Toy Story 3", sortValue:2010.42},
+        {label:"Cars 2", sortValue:2011.5},
+        {label:"Brave", sortValue:2012.5},
+        {label:"Monsters University", sortValue:2013.5},
+        {label:"Inside Out", sortValue:2015.5},
+        {label:"The Good Dinosaur", sortValue:2015.92},
+        {label:"Finding Dory", sortValue:2016.5},
+        {label:"Cars 3", sortValue:2017.5},
+        {label:"Coco", sortValue:2017.92},
+        {label:"Incredibles 2", sortValue:2018.5},
+        {label:"Toy Story 4", sortValue:2019.5},
+        {label:"Onward", sortValue:2020.17},
+        {label:"Soul", sortValue:2020.92}
+      ]
+    },
+    movies: {
+      name:"Movies", icon:"🎬",
+      prompt:"Arrange these films by U.S. release date.",
+      emojis:["🎬","🍿","🎞️"],
+      items:[
+        {label:"The Wizard of Oz", sortValue:1939.67},
+        {label:"Gone with the Wind", sortValue:1939.83},
+        {label:"Citizen Kane", sortValue:1941.42},
+        {label:"Casablanca", sortValue:1942.92},
+        {label:"Psycho", sortValue:1960.5},
+        {label:"The Godfather", sortValue:1972.25},
+        {label:"Jaws", sortValue:1975.5},
+        {label:"E.T. the Extra-Terrestrial", sortValue:1982.5},
+        {label:"Back to the Future", sortValue:1985.5},
+        {label:"Jurassic Park", sortValue:1993.5},
+        {label:"Titanic", sortValue:1997.92},
+        {label:"The Matrix", sortValue:1999.25},
+        {label:"The Dark Knight", sortValue:2008.5},
+        {label:"Avatar", sortValue:2009.92},
+        {label:"Inception", sortValue:2010.58},
+        {label:"Frozen", sortValue:2013.92},
+        {label:"Barbie", sortValue:2023.549},
+        {label:"Oppenheimer", sortValue:2023.55},
+        {label:"Snow White and the Seven Dwarfs", sortValue:1937.92},
+        {label:"Singin' in the Rain", sortValue:1952.33},
+        {label:"Lawrence of Arabia", sortValue:1962.92},
+        {label:"The Sound of Music", sortValue:1965.25},
+        {label:"2001: A Space Odyssey", sortValue:1968.33},
+        {label:"Rocky", sortValue:1976.92},
+        {label:"Alien", sortValue:1979.42},
+        {label:"Raiders of the Lost Ark", sortValue:1981.5},
+        {label:"Die Hard", sortValue:1988.58},
+        {label:"Home Alone", sortValue:1990.92},
+        {label:"The Lion King", sortValue:1994.48},
+        {label:"Forrest Gump", sortValue:1994.51},
+        {label:"The Shawshank Redemption", sortValue:1994.73},
+        {label:"Pulp Fiction", sortValue:1994.78},
+        {label:"The Lord of the Rings: The Fellowship of the Ring", sortValue:2001.92},
+        {label:"Interstellar", sortValue:2014.83}
+      ]
+    },
+    history: {
+      name:"History", icon:"🏛️",
+      prompt:"Arrange these historical events in the order they happened.",
+      emojis:["🏛️","📜","⏳"],
+      items:[
+        {label:"The Declaration of Independence is signed", sortValue:1776.58},
+        {label:"The storming of the Bastille begins the French Revolution", sortValue:1789.54},
+        {label:"The American Civil War begins", sortValue:1861.33},
+        {label:"The American Civil War ends", sortValue:1865.33},
+        {label:"The Titanic sinks", sortValue:1912.25},
+        {label:"World War I begins", sortValue:1914.5},
+        {label:"The Russian Revolution takes place", sortValue:1917.83},
+        {label:"World War I ends", sortValue:1918.83},
+        {label:"Women's suffrage is ratified in the U.S.", sortValue:1920.67},
+        {label:"The Great Depression begins", sortValue:1929.83},
+        {label:"World War II begins", sortValue:1939.75},
+        {label:"Attack on Pearl Harbor", sortValue:1941.92},
+        {label:"World War II ends", sortValue:1945.58},
+        {label:"The Cuban Missile Crisis unfolds", sortValue:1962.83},
+        {label:"Martin Luther King Jr. delivers 'I Have a Dream'", sortValue:1963.67},
+        {label:"Apollo 11 Moon landing", sortValue:1969.5},
+        {label:"The Vietnam War ends", sortValue:1975.33},
+        {label:"The Chernobyl disaster occurs", sortValue:1986.33},
+        {label:"The Berlin Wall falls", sortValue:1989.83},
+        {label:"The Maastricht Treaty establishes the EU", sortValue:1993.92},
+        {label:"Hong Kong is handed over to China", sortValue:1997.5},
+        {label:"The Good Friday Agreement is signed", sortValue:1998.33},
+        {label:"September 11 attacks", sortValue:2001.67},
+        {label:"The Magna Carta is signed", sortValue:1215.5},
+        {label:"Columbus reaches the Americas", sortValue:1492.83},
+        {label:"The Protestant Reformation begins", sortValue:1517.83},
+        {label:"The Salem witch trials begin", sortValue:1692.25},
+        {label:"The U.S. Constitution is signed", sortValue:1787.75},
+        {label:"The Louisiana Purchase is completed", sortValue:1803.33},
+        {label:"The Emancipation Proclamation is issued", sortValue:1863.0},
+        {label:"Women gain partial suffrage in the UK", sortValue:1918.08},
+        {label:"India gains independence", sortValue:1947.67},
+        {label:"The State of Israel is established", sortValue:1948.42},
+        {label:"The Civil Rights Act is signed", sortValue:1964.5},
+        {label:"The Soviet Union dissolves", sortValue:1991.92},
+        {label:"The Rwandan genocide occurs", sortValue:1994.33},
+        {label:"The global financial crisis begins", sortValue:2008.75},
+        {label:"The Arab Spring begins", sortValue:2010.92},
+        {label:"The COVID-19 pandemic is declared", sortValue:2020.25},
+        {label:"The Boston Tea Party takes place", sortValue:1773.92},
+        {label:"The Treaty of Versailles is signed", sortValue:1919.5},
+        {label:"The United Nations is founded", sortValue:1945.83},
+        {label:"NATO is founded", sortValue:1949.33},
+        {label:"The Cultural Revolution begins in China", sortValue:1966.42},
+        {label:"The Camp David Accords are signed", sortValue:1978.75},
+        {label:"The Oslo Accords are signed", sortValue:1993.67},
+        {label:"The Kyoto Protocol is adopted", sortValue:1997.92},
+        {label:"The Paris Agreement on climate change is adopted", sortValue:2015.92}
+      ]
+    },
+    tech: {
+      name:"Tech", icon:"💻",
+      prompt:"Arrange these tech milestones in the order they happened.",
+      emojis:["💻","🔌","📡"],
+      items:[
+        {label:"Microsoft is founded", sortValue:1975.0},
+        {label:"The Altair 8800, an early personal computer, is released", sortValue:1975.08},
+        {label:"Apple Inc. is founded", sortValue:1976.33},
+        {label:"The first IBM PC is released", sortValue:1981.67},
+        {label:"The first Macintosh is released", sortValue:1984.08},
+        {label:"The World Wide Web goes public", sortValue:1991.5},
+        {label:"Amazon.com launches", sortValue:1995.5},
+        {label:"eBay is founded", sortValue:1995.75},
+        {label:"Google is founded", sortValue:1998.75},
+        {label:"Wikipedia launches", sortValue:2001.08},
+        {label:"Facebook is founded", sortValue:2004.08},
+        {label:"YouTube launches", sortValue:2005.17},
+        {label:"Twitter launches", sortValue:2006.25},
+        {label:"The first iPhone is released", sortValue:2007.5},
+        {label:"The App Store launches", sortValue:2008.58},
+        {label:"The first Android phone is released", sortValue:2008.83},
+        {label:"Bitcoin is created", sortValue:2009.08},
+        {label:"Uber is founded", sortValue:2009.25},
+        {label:"The first iPad is released", sortValue:2010.33},
+        {label:"Instagram launches", sortValue:2010.83},
+        {label:"Snapchat launches", sortValue:2011.75},
+        {label:"TikTok launches globally", sortValue:2018.67},
+        {label:"ChatGPT is released", sortValue:2022.92},
+        {label:"The vacuum tube is invented", sortValue:1904.5},
+        {label:"ARPANET, precursor to the internet, is created", sortValue:1969.83},
+        {label:"The first email is sent", sortValue:1971.83},
+        {label:"The first mobile phone call is made", sortValue:1973.33},
+        {label:"The compact disc is introduced", sortValue:1982.83},
+        {label:"The first '.com' domain is registered", sortValue:1985.25},
+        {label:"Linux is released", sortValue:1991.75},
+        {label:"Netscape Navigator launches", sortValue:1994.83},
+        {label:"The first 3G mobile network launches", sortValue:2001.0},
+        {label:"Skype launches", sortValue:2003.67},
+        {label:"Reddit is founded", sortValue:2005.5},
+        {label:"The Kindle is released", sortValue:2007.83},
+        {label:"WhatsApp launches", sortValue:2009.09},
+        {label:"Zoom is founded", sortValue:2011.33},
+        {label:"Slack launches", sortValue:2013.67},
+        {label:"The floppy disk is introduced", sortValue:1971.0},
+        {label:"USB is introduced", sortValue:1996.0},
+        {label:"Wi-Fi technology is introduced", sortValue:1997.75},
+        {label:"Google Maps launches", sortValue:2005.08},
+        {label:"Waze launches", sortValue:2008.42},
+        {label:"Venmo launches", sortValue:2009.5},
+        {label:"The Apple Watch is released", sortValue:2015.33}
+      ]
+    },
+    music: {
+      name:"Music", icon:"🎵",
+      prompt:"Arrange these music-industry milestones in order.",
+      emojis:["🎵","🎸","🎧"],
+      items:[
+        {label:"Elvis Presley's first single is released", sortValue:1954.5},
+        {label:"The Beatles form in Liverpool", sortValue:1960.5},
+        {label:"The Beatles arrive in America", sortValue:1964.08},
+        {label:"The Woodstock festival is held", sortValue:1969.67},
+        {label:"MTV launches", sortValue:1981.67},
+        {label:"Michael Jackson's 'Thriller' is released", sortValue:1982.92},
+        {label:"The Live Aid concert is held", sortValue:1985.58},
+        {label:"Napster launches", sortValue:1999.5},
+        {label:"The iPod is released", sortValue:2001.83},
+        {label:"The iTunes Store launches", sortValue:2003.33},
+        {label:"Spotify is founded", sortValue:2006.33},
+        {label:"Spotify launches in Europe", sortValue:2008.83},
+        {label:"Spotify launches in the U.S.", sortValue:2011.58},
+        {label:"Beyoncé releases her surprise self-titled album", sortValue:2013.92},
+        {label:"Tidal launches", sortValue:2014.83},
+        {label:"Apple Music launches", sortValue:2015.5},
+        {label:"The Grammy Awards are first held", sortValue:1959.42},
+        {label:"The first commercial radio broadcast airs", sortValue:1920.83},
+        {label:"Bob Dylan goes electric at the Newport Folk Festival", sortValue:1965.5},
+        {label:"Madonna releases her debut album", sortValue:1983.58},
+        {label:"Nirvana releases 'Nevermind'", sortValue:1991.75},
+        {label:"Live 8 concerts are held worldwide", sortValue:2005.58},
+        {label:"SoundCloud launches", sortValue:2008.67},
+        {label:"Adele releases '21'", sortValue:2011.08},
+        {label:"Lady Gaga releases 'Born This Way'", sortValue:2011.42},
+        {label:"BTS makes its debut", sortValue:2013.5},
+        {label:"Taylor Swift releases '1989'", sortValue:2014.84},
+        {label:"Billie Eilish releases her debut album", sortValue:2019.25},
+        {label:"Whitney Houston releases 'I Will Always Love You'", sortValue:1992.92},
+        {label:"Michael Jackson releases 'Bad'", sortValue:1987.67},
+        {label:"Eminem releases 'The Slim Shady LP'", sortValue:1999.17},
+        {label:"The Coachella music festival is first held", sortValue:1999.83},
+        {label:"Kanye West releases 'The College Dropout'", sortValue:2004.08},
+        {label:"Drake releases 'Take Care'", sortValue:2011.83}
+      ]
+    },
+    inventions: {
+      name:"Inventions", icon:"💡",
+      prompt:"Arrange these inventions in the order they were introduced.",
+      emojis:["💡","⚙️","🔧"],
+      items:[
+        {label:"The printing press is invented", sortValue:1440},
+        {label:"James Watt's improved steam engine is patented", sortValue:1769.0},
+        {label:"The cotton gin is invented", sortValue:1793.0},
+        {label:"The electric telegraph is invented", sortValue:1837.0},
+        {label:"The sewing machine is patented", sortValue:1846.0},
+        {label:"The telephone is patented", sortValue:1876.17},
+        {label:"The phonograph is invented", sortValue:1877.83},
+        {label:"The practical light bulb is patented", sortValue:1879.92},
+        {label:"The automobile (Benz Patent-Motorwagen) is built", sortValue:1886.0},
+        {label:"Long-distance wireless radio is demonstrated", sortValue:1895.5},
+        {label:"Powered airplane flight is achieved", sortValue:1903.92},
+        {label:"The zipper is patented", sortValue:1913.33},
+        {label:"Television is first demonstrated", sortValue:1926.08},
+        {label:"The ballpoint pen is patented", sortValue:1938.83},
+        {label:"The microwave oven is invented", sortValue:1945.83},
+        {label:"The transistor is invented", sortValue:1947.92},
+        {label:"Velcro is invented", sortValue:1955.0},
+        {label:"Eyeglasses are invented", sortValue:1286.0},
+        {label:"The mercury thermometer is invented", sortValue:1714.0},
+        {label:"The first practical parachute jump is made", sortValue:1797.67},
+        {label:"The safety pin is patented", sortValue:1849.33},
+        {label:"Dynamite is invented", sortValue:1867.0},
+        {label:"The escalator is patented", sortValue:1892.0},
+        {label:"The vacuum cleaner is invented", sortValue:1901.0},
+        {label:"3D printing is invented", sortValue:1984.5},
+        {label:"The Post-it Note is invented", sortValue:1974.5},
+        {label:"GPS becomes fully operational", sortValue:1995.0},
+        {label:"Photography (the daguerreotype) is introduced", sortValue:1839.0},
+        {label:"Rubber vulcanization is invented", sortValue:1839.6},
+        {label:"The safety elevator is invented", sortValue:1852.5},
+        {label:"The Ferris Wheel is invented", sortValue:1893.5},
+        {label:"LED technology is invented", sortValue:1962.5},
+        {label:"The lightning rod is invented", sortValue:1752.5},
+        {label:"The stethoscope is invented", sortValue:1816.0},
+        {label:"The mechanical refrigerator is invented", sortValue:1834.5},
+        {label:"Radar technology is developed", sortValue:1935.5}
+      ]
+    },
+    videogames: {
+      name:"Video Games", icon:"🎮",
+      prompt:"Arrange these video games by original release date.",
+      emojis:["🎮","👾","🕹️"],
+      items:[
+        {label:"Pong", sortValue:1972.92},
+        {label:"Space Invaders", sortValue:1978.5},
+        {label:"Pac-Man", sortValue:1980.42},
+        {label:"Tetris", sortValue:1984.5},
+        {label:"Super Mario Bros.", sortValue:1985.75},
+        {label:"The Nintendo Entertainment System launches in the U.S.", sortValue:1985.83},
+        {label:"The Legend of Zelda", sortValue:1986.08},
+        {label:"Sonic the Hedgehog", sortValue:1991.5},
+        {label:"Doom", sortValue:1993.92},
+        {label:"The PlayStation launches", sortValue:1994.92},
+        {label:"The Nintendo 64 launches", sortValue:1996.5},
+        {label:"World of Warcraft launches", sortValue:2004.92},
+        {label:"The Wii launches", sortValue:2006.92},
+        {label:"Minecraft", sortValue:2011.83},
+        {label:"Grand Theft Auto V", sortValue:2013.75},
+        {label:"The Legend of Zelda: Breath of the Wild", sortValue:2017.25},
+        {label:"Fortnite Battle Royale", sortValue:2017.75},
+        {label:"Among Us", sortValue:2018.5},
+        {label:"Animal Crossing: New Horizons", sortValue:2020.25},
+        {label:"Atari is founded", sortValue:1972.5},
+        {label:"The Atari 2600 launches", sortValue:1977.75},
+        {label:"Donkey Kong is released", sortValue:1981.58},
+        {label:"The Sega Genesis launches in the U.S.", sortValue:1988.67},
+        {label:"Street Fighter II is released", sortValue:1991.17},
+        {label:"The PlayStation 2 launches", sortValue:2000.25},
+        {label:"The Xbox launches", sortValue:2001.83},
+        {label:"The Nintendo Switch launches", sortValue:2017.17},
+        {label:"PUBG is released", sortValue:2017.42},
+        {label:"The PlayStation 5 launches", sortValue:2020.83},
+        {label:"Baldur's Gate 3 is released", sortValue:2023.67},
+        {label:"The Game Boy Advance launches", sortValue:2001.25},
+        {label:"Halo: Combat Evolved is released", sortValue:2001.92},
+        {label:"Angry Birds is released", sortValue:2009.92},
+        {label:"Pokémon Go is released", sortValue:2016.5}
+      ]
+    },
+    foodtrends: {
+      name:"Food Trends", icon:"🍔",
+      prompt:"Arrange these food moments in the order they happened.",
+      emojis:["🍔","🧋","🥑"],
+      items:[
+        {label:"Coca-Cola is invented", sortValue:1886.42},
+        {label:"Sliced bread is first sold commercially", sortValue:1928.58},
+        {label:"The chocolate chip cookie is invented", sortValue:1938.0},
+        {label:"McDonald's is founded", sortValue:1940.42},
+        {label:"Instant ramen is invented", sortValue:1958.67},
+        {label:"The Big Mac is introduced", sortValue:1967.67},
+        {label:"The first Starbucks store opens", sortValue:1971.25},
+        {label:"Red Bull energy drink is introduced", sortValue:1987.25},
+        {label:"The Starbucks Frappuccino is introduced", sortValue:1995.42},
+        {label:"Chobani is founded", sortValue:2005.83},
+        {label:"Plant-based burgers go mainstream", sortValue:2016.0},
+        {label:"The Cronut is invented", sortValue:2013.42},
+        {label:"Poke bowls go mainstream in the U.S.", sortValue:2016.5},
+        {label:"The Unicorn Frappuccino is released", sortValue:2017.33},
+        {label:"Oat milk lattes go mainstream", sortValue:2019.5},
+        {label:"Whipped 'Dalgona' coffee trends", sortValue:2020.25},
+        {label:"'Girl dinner' goes viral", sortValue:2023.5},
+        {label:"Pizza Margherita is created", sortValue:1889.5},
+        {label:"The first fast-food drive-thru opens", sortValue:1948.0},
+        {label:"Pop-Tarts are introduced", sortValue:1964.0},
+        {label:"The Big Gulp is introduced", sortValue:1976.0},
+        {label:"Ben & Jerry's is founded", sortValue:1978.42},
+        {label:"Bubble tea originates in Taiwan", sortValue:1986.0},
+        {label:"Kellogg's Corn Flakes are introduced", sortValue:1894.5},
+        {label:"Hershey's Milk Chocolate Bar is introduced", sortValue:1900.0},
+        {label:"The ice cream cone is popularized", sortValue:1904.5},
+        {label:"Oreo cookies are introduced", sortValue:1912.25},
+        {label:"The Caesar salad is invented", sortValue:1924.5},
+        {label:"Spam, the canned meat, is introduced", sortValue:1937.5},
+        {label:"M&M's candy is introduced", sortValue:1941.5},
+        {label:"The frozen TV dinner is introduced", sortValue:1953.83},
+        {label:"Pizza Hut is founded", sortValue:1958.42},
+        {label:"Gatorade is invented", sortValue:1965.5},
+        {label:"The PowerBar energy bar is introduced", sortValue:1986.5}
+      ]
+    },
+    space: {
+      name:"Space Exploration", icon:"🚀",
+      prompt:"Arrange these space milestones in the order they happened.",
+      emojis:["🚀","🛰️","🌌"],
+      items:[
+        {label:"Sputnik 1 launches", sortValue:1957.75},
+        {label:"Explorer 1, the first U.S. satellite, launches", sortValue:1958.08},
+        {label:"The first human reaches space", sortValue:1961.25},
+        {label:"The first American orbits Earth", sortValue:1962.17},
+        {label:"The first spacewalk takes place", sortValue:1965.25},
+        {label:"The first Moon landing", sortValue:1969.5},
+        {label:"Viking 1 lands on Mars", sortValue:1976.58},
+        {label:"Voyager 1 launches", sortValue:1977.75},
+        {label:"The first Space Shuttle launches", sortValue:1981.33},
+        {label:"The Challenger disaster occurs", sortValue:1986.08},
+        {label:"The Mir space station launches", sortValue:1986.17},
+        {label:"The Hubble Space Telescope launches", sortValue:1990.33},
+        {label:"Mars Pathfinder lands on Mars", sortValue:1997.5},
+        {label:"The first ISS module launches", sortValue:1998.83},
+        {label:"SpaceX is founded", sortValue:2002.42},
+        {label:"The Columbia disaster occurs", sortValue:2003.08},
+        {label:"SpaceX's Falcon 1 reaches orbit", sortValue:2008.75},
+        {label:"SpaceX lands and reuses an orbital rocket booster", sortValue:2015.92},
+        {label:"SpaceX launches its first crewed mission", sortValue:2020.42},
+        {label:"The James Webb Space Telescope launches", sortValue:2021.92},
+        {label:"The Apollo 13 mission takes place", sortValue:1970.33},
+        {label:"The Apollo-Soyuz Test Project docks American and Soviet spacecraft", sortValue:1975.58},
+        {label:"The Galileo probe launches to Jupiter", sortValue:1989.83},
+        {label:"The Cassini probe launches to Saturn", sortValue:1997.83},
+        {label:"The Spirit and Opportunity rovers land on Mars", sortValue:2004.08},
+        {label:"The Curiosity rover lands on Mars", sortValue:2012.67},
+        {label:"New Horizons flies by Pluto", sortValue:2015.5},
+        {label:"The Perseverance rover lands on Mars", sortValue:2021.08},
+        {label:"Artemis I launches", sortValue:2022.92},
+        {label:"The Soviet Union launches Luna 2, the first spacecraft to reach the Moon", sortValue:1959.75},
+        {label:"Skylab, America's first space station, launches", sortValue:1973.42},
+        {label:"The Space Shuttle program ends", sortValue:2011.58},
+        {label:"China lands Chang'e 4 on the far side of the Moon", sortValue:2019.08},
+        {label:"Telstar, the first commercial communications satellite, launches", sortValue:1962.58},
+        {label:"The Mars Global Surveyor launches", sortValue:1996.92},
+        {label:"The Rosetta probe lands on a comet", sortValue:2014.92}
+      ]
+    },
+    automobiles: {
+      name:"Automobiles", icon:"🚗",
+      prompt:"Arrange these car milestones in the order they happened.",
+      emojis:["🚗","🔧","🛣️"],
+      items:[
+        {label:"The Benz Patent-Motorwagen, the first automobile, is built", sortValue:1886.0},
+        {label:"The Ford Model T is released", sortValue:1908.83},
+        {label:"Ford's moving assembly line is introduced", sortValue:1913.92},
+        {label:"The Volkswagen Beetle debuts", sortValue:1938.17},
+        {label:"The Chevrolet Corvette is introduced", sortValue:1953.5},
+        {label:"The Ford Mustang is introduced", sortValue:1964.33},
+        {label:"The Toyota Corolla launches", sortValue:1966.83},
+        {label:"The first Honda Civic is released", sortValue:1972.58},
+        {label:"The first BMW 3 Series is released", sortValue:1975.42},
+        {label:"The first Toyota Prius is released", sortValue:1997.83},
+        {label:"The Tesla Roadster is released", sortValue:2008.17},
+        {label:"The Nissan Leaf is released", sortValue:2010.92},
+        {label:"The Tesla Model S is released", sortValue:2012.5},
+        {label:"The Tesla Model 3 is released", sortValue:2017.58},
+        {label:"The Ford Mustang Mach-E is released", sortValue:2020.83},
+        {label:"The Ford Model A is introduced", sortValue:1927.83},
+        {label:"The Volkswagen Golf is introduced", sortValue:1974.42},
+        {label:"The Honda Accord is introduced", sortValue:1976.5},
+        {label:"The BMW M3 is introduced", sortValue:1986.5},
+        {label:"The Dodge Viper is introduced", sortValue:1991.92},
+        {label:"The Toyota RAV4 is introduced", sortValue:1994.25},
+        {label:"The Smart Fortwo is introduced", sortValue:1998.42},
+        {label:"The Tesla Model X is released", sortValue:2015.75},
+        {label:"The Rivian R1T is released", sortValue:2021.75},
+        {label:"The Cybertruck is released", sortValue:2023.92},
+        {label:"The Jeep is introduced", sortValue:1941.5},
+        {label:"Volvo introduces the three-point seatbelt", sortValue:1959.5},
+        {label:"The Mini Cooper is introduced", sortValue:1959.67},
+        {label:"The Porsche 911 is introduced", sortValue:1963.75},
+        {label:"The Range Rover is introduced", sortValue:1970.42},
+        {label:"The Ford F-150 is introduced", sortValue:1975.5},
+        {label:"The Toyota Camry is introduced", sortValue:1982.5},
+        {label:"The Jeep Wrangler is introduced", sortValue:1986.83},
+        {label:"The Honda CR-V is introduced", sortValue:1995.5}
+      ]
+    },
+    toys: {
+      name:"Toys & Games", icon:"🧸",
+      prompt:"Arrange these toy and game milestones in the order they happened.",
+      emojis:["🧸","🎲","🪀"],
+      items:[
+        {label:"Monopoly is published", sortValue:1935.0},
+        {label:"LEGO bricks are introduced", sortValue:1958.0},
+        {label:"The Barbie doll is introduced", sortValue:1959.17},
+        {label:"The Etch A Sketch is introduced", sortValue:1960.5},
+        {label:"The Easy-Bake Oven is introduced", sortValue:1963.83},
+        {label:"Uno is published", sortValue:1971.0},
+        {label:"The Nerf ball is introduced", sortValue:1969.5},
+        {label:"The Rubik's Cube is invented", sortValue:1974.0},
+        {label:"Cabbage Patch Kids are released", sortValue:1982.75},
+        {label:"The Game Boy is released", sortValue:1989.33},
+        {label:"Beanie Babies launch", sortValue:1993.0},
+        {label:"Tickle Me Elmo is released", sortValue:1996.83},
+        {label:"The Pokémon Trading Card Game launches in Japan", sortValue:1996.88},
+        {label:"Tamagotchi is released", sortValue:1997.33},
+        {label:"Furby is released", sortValue:1998.83},
+        {label:"The Pokémon Trading Card Game launches in the U.S.", sortValue:1999.08},
+        {label:"Play-Doh is introduced", sortValue:1956.0},
+        {label:"G.I. Joe is introduced", sortValue:1964.0},
+        {label:"Hot Wheels are introduced", sortValue:1968.0},
+        {label:"Dungeons & Dragons is published", sortValue:1974.42},
+        {label:"Trivial Pursuit is published", sortValue:1981.5},
+        {label:"Webkinz are introduced", sortValue:2005.0},
+        {label:"Fidget spinners go viral", sortValue:2017.0},
+        {label:"The View-Master is introduced", sortValue:1939.5},
+        {label:"The Slinky is introduced", sortValue:1945.0},
+        {label:"Silly Putty is introduced", sortValue:1950.0},
+        {label:"Mr. Potato Head is introduced", sortValue:1952.5},
+        {label:"Twister is introduced", sortValue:1966.5},
+        {label:"The Simon electronic game is introduced", sortValue:1978.5},
+        {label:"My Little Pony is introduced", sortValue:1981.52},
+        {label:"Transformers toys are introduced", sortValue:1984.5},
+        {label:"Bratz dolls are introduced", sortValue:2001.5},
+        {label:"L.O.L. Surprise! dolls are introduced", sortValue:2016.5}
+      ]
+    },
+    fashion: {
+      name:"Fashion", icon:"👟",
+      prompt:"Arrange these fashion milestones in the order they happened.",
+      emojis:["👟","👗","🕶️"],
+      items:[
+        {label:"Levi's patents blue jeans", sortValue:1873.42},
+        {label:"The modern bra is patented", sortValue:1914.92},
+        {label:"Chanel No. 5 launches", sortValue:1921.0},
+        {label:"Coco Chanel popularizes the 'little black dress'", sortValue:1926.83},
+        {label:"Nylon stockings are introduced", sortValue:1940.0},
+        {label:"The bikini is introduced", sortValue:1946.58},
+        {label:"Nike is founded", sortValue:1964.08},
+        {label:"The miniskirt becomes popular", sortValue:1964.5},
+        {label:"The Nike Air Jordan 1 is released", sortValue:1985.33},
+        {label:"The Nike Air Max 1 is released", sortValue:1987.25},
+        {label:"Lululemon is founded", sortValue:1998.0},
+        {label:"Crocs shoes launch", sortValue:2002.5},
+        {label:"The Nike Air Yeezy is released", sortValue:2009.25},
+        {label:"The Adidas Yeezy Boost 350 is released", sortValue:2015.17},
+        {label:"The Nike Adapt BB self-lacing sneaker is released", sortValue:2019.08},
+        {label:"Christian Dior's 'New Look' debuts", sortValue:1947.17},
+        {label:"Doc Martens boots are introduced", sortValue:1960.33},
+        {label:"Ralph Lauren founds his fashion label", sortValue:1967.0},
+        {label:"Calvin Klein founds his fashion label", sortValue:1968.5},
+        {label:"Supreme is founded", sortValue:1994.33},
+        {label:"Fashion Nova is founded", sortValue:2006.0},
+        {label:"The trench coat (Burberry) becomes popular", sortValue:1901.0},
+        {label:"Converse Chuck Taylor All-Stars are introduced", sortValue:1917.5},
+        {label:"Ray-Ban Aviator sunglasses are introduced", sortValue:1937.0},
+        {label:"Spandex (Lycra) is invented", sortValue:1958.5},
+        {label:"Birkenstock sandals are imported to the U.S.", sortValue:1966.0},
+        {label:"Vans shoes is founded", sortValue:1966.5},
+        {label:"The push-up bra is introduced", sortValue:1964.15},
+        {label:"The North Face is founded", sortValue:1968.52},
+        {label:"Patagonia is founded", sortValue:1973.5},
+        {label:"UGG is founded", sortValue:1978.5},
+        {label:"Uniqlo is founded", sortValue:1984.5}
+      ]
+    },
+    sports: {
+      name:"Sports", icon:"🏆",
+      prompt:"Arrange these sports milestones in the order they happened.",
+      emojis:["🏆","⚽","🏅"],
+      items:[
+        {label:"The first Wimbledon championship is held", sortValue:1877.58},
+        {label:"The first modern Olympic Games are held", sortValue:1896.33},
+        {label:"Babe Ruth hits 60 home runs in a season", sortValue:1927.75},
+        {label:"Jesse Owens wins four golds at the Berlin Olympics", sortValue:1936.67},
+        {label:"The first FIFA World Cup is held", sortValue:1930.58},
+        {label:"Roger Bannister runs the first sub-4-minute mile", sortValue:1954.42},
+        {label:"The first Super Bowl is played", sortValue:1967.08},
+        {label:"The 'Rumble in the Jungle' takes place", sortValue:1974.83},
+        {label:"The 'Miracle on Ice' U.S. hockey team wins Olympic gold", sortValue:1980.08},
+        {label:"Michael Jordan wins his first NBA title", sortValue:1991.5},
+        {label:"Tiger Woods wins his first Masters", sortValue:1997.33},
+        {label:"Michael Jordan wins his final title with the Bulls", sortValue:1998.5},
+        {label:"Serena Williams wins her first Grand Slam title", sortValue:1999.75},
+        {label:"Michael Phelps wins eight golds at the Beijing Olympics", sortValue:2008.67},
+        {label:"Usain Bolt sets the 100m world record", sortValue:2009.67},
+        {label:"LeBron James wins his first NBA title", sortValue:2012.5},
+        {label:"Germany wins the World Cup in Brazil", sortValue:2014.5},
+        {label:"The U.S. wins the Women's World Cup in France", sortValue:2019.5},
+        {label:"Tom Brady wins his seventh Super Bowl", sortValue:2021.02},
+        {label:"Lionel Messi wins the World Cup with Argentina", sortValue:2022.92},
+        {label:"The first Kentucky Derby is held", sortValue:1875.42},
+        {label:"Formula 1 holds its first World Championship race", sortValue:1950.42},
+        {label:"The first Indianapolis 500 is held", sortValue:1911.42},
+        {label:"Jackie Robinson breaks MLB's color barrier", sortValue:1947.33},
+        {label:"Pelé wins his first World Cup", sortValue:1958.5},
+        {label:"Secretariat wins the Triple Crown", sortValue:1973.5},
+        {label:"Diego Maradona scores the 'Hand of God' goal", sortValue:1986.5},
+        {label:"Simone Biles wins her first Olympic gold medal", sortValue:2016.58},
+        {label:"The first NBA season begins", sortValue:1946.83},
+        {label:"Wilt Chamberlain scores 100 points in a game", sortValue:1962.25},
+        {label:"The first Ironman Triathlon is held", sortValue:1978.08},
+        {label:"Nadia Comăneci scores a perfect 10 at the Olympics", sortValue:1976.75},
+        {label:"The U.S. wins the 'Miracle Match' at the 1950 World Cup", sortValue:1950.58},
+        {label:"Leicester City wins the Premier League as 5000-1 underdogs", sortValue:2016.42}
+      ]
+    },
+    streaming: {
+      name:"Streaming & TV", icon:"📺",
+      prompt:"Arrange these streaming and TV milestones in the order they happened.",
+      emojis:["📺","🍿","🎬"],
+      items:[
+        {label:"I Love Lucy premieres", sortValue:1951.83},
+        {label:"Seinfeld premieres", sortValue:1989.58},
+        {label:"The Simpsons premieres", sortValue:1989.92},
+        {label:"Friends premieres", sortValue:1994.75},
+        {label:"Netflix is founded", sortValue:1997.67},
+        {label:"The Sopranos premieres", sortValue:1999.0},
+        {label:"Netflix launches its streaming service", sortValue:2007.08},
+        {label:"Breaking Bad premieres", sortValue:2008.08},
+        {label:"Hulu launches", sortValue:2008.17},
+        {label:"Game of Thrones premieres", sortValue:2011.33},
+        {label:"Stranger Things premieres on Netflix", sortValue:2016.58},
+        {label:"Apple TV+ launches", sortValue:2019.833},
+        {label:"Disney+ launches", sortValue:2019.863},
+        {label:"HBO Max launches", sortValue:2020.42},
+        {label:"Squid Game premieres on Netflix", sortValue:2021.75},
+        {label:"Cheers premieres", sortValue:1982.75},
+        {label:"Twin Peaks premieres", sortValue:1990.33},
+        {label:"The X-Files premieres", sortValue:1993.75},
+        {label:"Amazon Prime Video launches", sortValue:2006.75},
+        {label:"The Office (U.S.) premieres", sortValue:2005.17},
+        {label:"Grey's Anatomy premieres", sortValue:2005.25},
+        {label:"Mad Men premieres", sortValue:2007.58},
+        {label:"The Crown premieres on Netflix", sortValue:2016.83},
+        {label:"Ted Lasso premieres", sortValue:2020.67},
+        {label:"Downton Abbey premieres", sortValue:2010.75},
+        {label:"House of Cards premieres on Netflix", sortValue:2013.08},
+        {label:"The Mandalorian premieres on Disney+", sortValue:2019.92},
+        {label:"Full House premieres", sortValue:1987.75},
+        {label:"ER premieres", sortValue:1994.76},
+        {label:"Lost premieres", sortValue:2004.75},
+        {label:"The Walking Dead premieres", sortValue:2010.83},
+        {label:"Bridgerton premieres on Netflix", sortValue:2020.92},
+        {label:"Only Murders in the Building premieres", sortValue:2021.67}
+      ]
+    },
+    olympics: {
+      name:"Olympic Games", icon:"🥇",
+      prompt:"Arrange these Olympic host cities by the year they hosted.",
+      emojis:["🥇","🏟️","🔥"],
+      items:[
+        {label:"Athens hosts the Olympics", sortValue:1896.33},
+        {label:"St. Louis hosts the Olympics", sortValue:1904.5},
+        {label:"London hosts the Olympics", sortValue:1908.5},
+        {label:"Stockholm hosts the Olympics", sortValue:1912.5},
+        {label:"Antwerp hosts the Olympics", sortValue:1920.5},
+        {label:"Paris hosts the Olympics", sortValue:1924.5},
+        {label:"Los Angeles hosts the Olympics", sortValue:1932.58},
+        {label:"Berlin hosts the Olympics", sortValue:1936.67},
+        {label:"London hosts the Olympics again", sortValue:1948.58},
+        {label:"Helsinki hosts the Olympics", sortValue:1952.58},
+        {label:"Rome hosts the Olympics", sortValue:1960.67},
+        {label:"Tokyo hosts the Olympics", sortValue:1964.83},
+        {label:"Mexico City hosts the Olympics", sortValue:1968.83},
+        {label:"Munich hosts the Olympics", sortValue:1972.67},
+        {label:"Montreal hosts the Olympics", sortValue:1976.58},
+        {label:"Los Angeles hosts the Olympics again", sortValue:1984.58},
+        {label:"Seoul hosts the Olympics", sortValue:1988.75},
+        {label:"Barcelona hosts the Olympics", sortValue:1992.58},
+        {label:"Atlanta hosts the Olympics", sortValue:1996.58},
+        {label:"Sydney hosts the Olympics", sortValue:2000.75},
+        {label:"Beijing hosts the Olympics", sortValue:2008.67},
+        {label:"London hosts the Olympics a third time", sortValue:2012.58},
+        {label:"Rio de Janeiro hosts the Olympics", sortValue:2016.58},
+        {label:"Tokyo hosts the Olympics again", sortValue:2021.58},
+        {label:"Paris hosts the Olympics again", sortValue:2024.58},
+        {label:"Chamonix hosts the first Winter Olympics", sortValue:1924.08},
+        {label:"St. Moritz hosts the Winter Olympics", sortValue:1928.08},
+        {label:"Lake Placid hosts the Winter Olympics", sortValue:1932.08},
+        {label:"Garmisch-Partenkirchen hosts the Winter Olympics", sortValue:1936.08},
+        {label:"Innsbruck hosts the Winter Olympics", sortValue:1964.08},
+        {label:"Sapporo hosts the Winter Olympics", sortValue:1972.08},
+        {label:"Lake Placid hosts the Winter Olympics again", sortValue:1980.08},
+        {label:"Calgary hosts the Winter Olympics", sortValue:1988.08},
+        {label:"Lillehammer hosts the Winter Olympics", sortValue:1994.08},
+        {label:"Nagano hosts the Winter Olympics", sortValue:1998.08},
+        {label:"Salt Lake City hosts the Winter Olympics", sortValue:2002.08},
+        {label:"Turin hosts the Winter Olympics", sortValue:2006.08},
+        {label:"Vancouver hosts the Winter Olympics", sortValue:2010.08},
+        {label:"Sochi hosts the Winter Olympics", sortValue:2014.08},
+        {label:"PyeongChang hosts the Winter Olympics", sortValue:2018.08},
+        {label:"Beijing hosts the Winter Olympics", sortValue:2022.08}
+      ]
+    },
+    landmarks: {
+      name:"World Landmarks", icon:"🗼",
+      prompt:"Arrange these landmarks by the year they were completed.",
+      emojis:["🗼","🏰","🌉"],
+      items:[
+        {label:"The Leaning Tower of Pisa is completed", sortValue:1372.0},
+        {label:"The Taj Mahal is completed", sortValue:1653.0},
+        {label:"The Suez Canal opens", sortValue:1869.83},
+        {label:"The Brooklyn Bridge is completed", sortValue:1883.42},
+        {label:"The Statue of Liberty is dedicated", sortValue:1886.83},
+        {label:"The Eiffel Tower is completed", sortValue:1889.25},
+        {label:"The Panama Canal opens", sortValue:1914.67},
+        {label:"The Empire State Building is completed", sortValue:1931.33},
+        {label:"The Hoover Dam is completed", sortValue:1936.17},
+        {label:"The Golden Gate Bridge is completed", sortValue:1937.42},
+        {label:"Mount Rushmore is completed", sortValue:1941.83},
+        {label:"The Space Needle is completed", sortValue:1962.33},
+        {label:"The Sydney Opera House is completed", sortValue:1973.83},
+        {label:"The CN Tower is completed", sortValue:1976.5},
+        {label:"The Burj Khalifa is completed", sortValue:2010.0},
+        {label:"The Colosseum is completed", sortValue:80.0},
+        {label:"Angkor Wat is completed", sortValue:1150.0},
+        {label:"St. Basil's Cathedral is completed", sortValue:1561.0},
+        {label:"The Palace of Versailles is completed", sortValue:1710.0},
+        {label:"The White House is completed", sortValue:1800.0},
+        {label:"The U.S. Capitol dome is completed", sortValue:1866.0},
+        {label:"The Chrysler Building is completed", sortValue:1930.42},
+        {label:"The Sydney Harbour Bridge is completed", sortValue:1932.25},
+        {label:"The Willis Tower is completed", sortValue:1973.58},
+        {label:"The Petronas Towers are completed", sortValue:1998.75},
+        {label:"The Shard is completed", sortValue:2012.58},
+        {label:"One World Trade Center is completed", sortValue:2013.83},
+        {label:"The Lincoln Memorial is completed", sortValue:1922.0},
+        {label:"The Christ the Redeemer statue is completed", sortValue:1931.83},
+        {label:"The Gateway Arch is completed", sortValue:1965.83},
+        {label:"The Millau Viaduct is completed", sortValue:2004.5},
+        {label:"The Ming-era sections of the Great Wall of China are largely completed", sortValue:1600.0},
+        {label:"St. Peter's Basilica is completed", sortValue:1626.5},
+        {label:"The Kremlin's current walls are completed", sortValue:1516.5}
+      ]
+    },
+    uspresidents: {
+      name:"U.S. Presidents", icon:"🇺🇸",
+      prompt:"Arrange these U.S. presidents by the year they were inaugurated.",
+      emojis:["🇺🇸","🦅","📜"],
+      items:[
+        {label:"George Washington is inaugurated", sortValue:1789.25},
+        {label:"John Adams is inaugurated", sortValue:1797.17},
+        {label:"Thomas Jefferson is inaugurated", sortValue:1801.17},
+        {label:"Andrew Jackson is inaugurated", sortValue:1829.17},
+        {label:"Abraham Lincoln is inaugurated", sortValue:1861.17},
+        {label:"Ulysses S. Grant is inaugurated", sortValue:1869.17},
+        {label:"Theodore Roosevelt takes office", sortValue:1901.75},
+        {label:"Woodrow Wilson is inaugurated", sortValue:1913.17},
+        {label:"Franklin D. Roosevelt is inaugurated", sortValue:1933.17},
+        {label:"Harry Truman takes office", sortValue:1945.33},
+        {label:"Dwight D. Eisenhower is inaugurated", sortValue:1953.05},
+        {label:"John F. Kennedy is inaugurated", sortValue:1961.05},
+        {label:"Lyndon B. Johnson takes office", sortValue:1963.9},
+        {label:"Richard Nixon is inaugurated", sortValue:1969.05},
+        {label:"Gerald Ford takes office", sortValue:1974.65},
+        {label:"Jimmy Carter is inaugurated", sortValue:1977.05},
+        {label:"Ronald Reagan is inaugurated", sortValue:1981.05},
+        {label:"George H.W. Bush is inaugurated", sortValue:1989.05},
+        {label:"Bill Clinton is inaugurated", sortValue:1993.05},
+        {label:"George W. Bush is inaugurated", sortValue:2001.05},
+        {label:"Barack Obama is inaugurated", sortValue:2009.05},
+        {label:"Donald Trump is inaugurated (first term)", sortValue:2017.05},
+        {label:"Joe Biden is inaugurated", sortValue:2021.05},
+        {label:"Donald Trump is inaugurated (second term)", sortValue:2025.05},
+        {label:"James Madison is inaugurated", sortValue:1809.17},
+        {label:"James Monroe is inaugurated", sortValue:1817.17},
+        {label:"William McKinley is inaugurated", sortValue:1897.17},
+        {label:"Calvin Coolidge takes office", sortValue:1923.67},
+        {label:"Herbert Hoover is inaugurated", sortValue:1929.17},
+        {label:"Rutherford B. Hayes is inaugurated", sortValue:1877.17},
+        {label:"Chester A. Arthur takes office", sortValue:1881.75},
+        {label:"Andrew Johnson takes office", sortValue:1865.42},
+        {label:"Warren G. Harding is inaugurated", sortValue:1921.17}
+      ]
+    },
+    literature: {
+      name:"Literature", icon:"📚",
+      prompt:"Arrange these novels by original publication year.",
+      emojis:["📚","🖋️","📖"],
+      items:[
+        {label:"Don Quixote is published", sortValue:1605.0},
+        {label:"Robinson Crusoe is published", sortValue:1719.0},
+        {label:"Pride and Prejudice is published", sortValue:1813.0},
+        {label:"Frankenstein is published", sortValue:1818.0},
+        {label:"Oliver Twist is published", sortValue:1838.0},
+        {label:"A Christmas Carol is published", sortValue:1843.0},
+        {label:"Moby-Dick is published", sortValue:1851.0},
+        {label:"Alice's Adventures in Wonderland is published", sortValue:1865.0},
+        {label:"War and Peace is published", sortValue:1869.0},
+        {label:"The Adventures of Huckleberry Finn is published", sortValue:1884.0},
+        {label:"Dracula is published", sortValue:1897.0},
+        {label:"The Great Gatsby is published", sortValue:1925.0},
+        {label:"1984 is published", sortValue:1949.0},
+        {label:"The Catcher in the Rye is published", sortValue:1951.0},
+        {label:"The Lord of the Rings is published", sortValue:1954.5},
+        {label:"To Kill a Mockingbird is published", sortValue:1960.0},
+        {label:"One Hundred Years of Solitude is published", sortValue:1967.0},
+        {label:"Harry Potter and the Philosopher's Stone is published", sortValue:1997.5},
+        {label:"The Da Vinci Code is published", sortValue:2003.0},
+        {label:"The Hunger Games is published", sortValue:2008.0},
+        {label:"The Canterbury Tales is written", sortValue:1400.0},
+        {label:"Romeo and Juliet is first performed", sortValue:1597.0},
+        {label:"Gulliver's Travels is published", sortValue:1726.0},
+        {label:"Little Women is published", sortValue:1868.0},
+        {label:"The Adventures of Sherlock Holmes is published", sortValue:1892.0},
+        {label:"Brave New World is published", sortValue:1932.0},
+        {label:"The Diary of a Young Girl is published", sortValue:1947.0},
+        {label:"The Hobbit is published", sortValue:1937.0},
+        {label:"Charlotte's Web is published", sortValue:1952.0},
+        {label:"Wuthering Heights is published", sortValue:1847.0},
+        {label:"The Picture of Dorian Gray is published", sortValue:1890.0},
+        {label:"Of Mice and Men is published", sortValue:1937.5},
+        {label:"The Lion, the Witch and the Wardrobe is published", sortValue:1950.5},
+        {label:"Fahrenheit 451 is published", sortValue:1953.0},
+        {label:"The Handmaid's Tale is published", sortValue:1985.0}
+      ]
+    },
+    companies: {
+      name:"Company Foundings", icon:"🏢",
+      prompt:"Arrange these companies by the year they were founded.",
+      emojis:["🏢","💼","📈"],
+      items:[
+        {label:"The East India Company is founded", sortValue:1600.0},
+        {label:"The Hudson's Bay Company is founded", sortValue:1670.0},
+        {label:"Coca-Cola Company is incorporated", sortValue:1892.0},
+        {label:"3M is founded", sortValue:1902.5},
+        {label:"Ford Motor Company is founded", sortValue:1903.5},
+        {label:"IBM is founded", sortValue:1911.5},
+        {label:"Boeing is founded", sortValue:1916.58},
+        {label:"The Walt Disney Company is founded", sortValue:1923.83},
+        {label:"Toyota Motor Corporation is founded", sortValue:1937.67},
+        {label:"Samsung is founded", sortValue:1938.0},
+        {label:"Sony is founded", sortValue:1946.42},
+        {label:"Southwest Airlines is founded", sortValue:1967.25},
+        {label:"FedEx is founded", sortValue:1971.33},
+        {label:"Blockbuster Video is founded", sortValue:1985.75},
+        {label:"PayPal is founded", sortValue:1998.92},
+        {label:"Airbnb is founded", sortValue:2008.67},
+        {label:"OpenAI is founded", sortValue:2015.92},
+        {label:"Levi Strauss & Co. is founded", sortValue:1853.0},
+        {label:"Johnson & Johnson is founded", sortValue:1886.5},
+        {label:"General Electric is founded", sortValue:1892.75},
+        {label:"Harley-Davidson is founded", sortValue:1903.25},
+        {label:"General Motors is founded", sortValue:1908.25},
+        {label:"Puma is founded", sortValue:1948.5},
+        {label:"Adidas is founded", sortValue:1949.5},
+        {label:"Walmart is founded", sortValue:1962.5},
+        {label:"Costco is founded", sortValue:1983.5},
+        {label:"ByteDance, TikTok's parent company, is founded", sortValue:2012.25},
+        {label:"IKEA is founded", sortValue:1943.5},
+        {label:"H&M is founded", sortValue:1947.5},
+        {label:"Zara is founded", sortValue:1975.5},
+        {label:"CNN is founded", sortValue:1980.5},
+        {label:"Whole Foods Market is founded", sortValue:1980.83},
+        {label:"Visa is founded", sortValue:1958.5}
+      ]
+    },
+    nobelpeace: {
+      name:"Nobel Peace Prize", icon:"🕊️",
+      prompt:"Arrange these Nobel Peace Prize wins by the year they were awarded.",
+      emojis:["🕊️","🌍","🤝"],
+      items:[
+        {label:"Henry Dunant wins the first Nobel Peace Prize", sortValue:1901.0},
+        {label:"Theodore Roosevelt wins the Nobel Peace Prize", sortValue:1906.0},
+        {label:"Woodrow Wilson wins the Nobel Peace Prize", sortValue:1919.0},
+        {label:"Jane Addams wins the Nobel Peace Prize", sortValue:1931.0},
+        {label:"Martin Luther King Jr. wins the Nobel Peace Prize", sortValue:1964.0},
+        {label:"Mother Teresa wins the Nobel Peace Prize", sortValue:1979.0},
+        {label:"Lech Wałęsa wins the Nobel Peace Prize", sortValue:1983.0},
+        {label:"Desmond Tutu wins the Nobel Peace Prize", sortValue:1984.0},
+        {label:"The 14th Dalai Lama wins the Nobel Peace Prize", sortValue:1989.0},
+        {label:"Nelson Mandela wins the Nobel Peace Prize", sortValue:1993.0},
+        {label:"Kofi Annan wins the Nobel Peace Prize", sortValue:2001.0},
+        {label:"Al Gore wins the Nobel Peace Prize", sortValue:2007.0},
+        {label:"Barack Obama wins the Nobel Peace Prize", sortValue:2009.0},
+        {label:"The European Union wins the Nobel Peace Prize", sortValue:2012.0},
+        {label:"Malala Yousafzai wins the Nobel Peace Prize", sortValue:2014.0},
+        {label:"Albert Schweitzer wins the Nobel Peace Prize", sortValue:1952.0},
+        {label:"Linus Pauling wins the Nobel Peace Prize", sortValue:1962.0},
+        {label:"Elie Wiesel wins the Nobel Peace Prize", sortValue:1986.0},
+        {label:"Aung San Suu Kyi wins the Nobel Peace Prize", sortValue:1991.0},
+        {label:"Yasser Arafat, Shimon Peres, and Yitzhak Rabin share the Nobel Peace Prize", sortValue:1994.0},
+        {label:"The International Campaign to Ban Landmines wins the Nobel Peace Prize", sortValue:1997.0},
+        {label:"Muhammad Yunus wins the Nobel Peace Prize", sortValue:2006.0},
+        {label:"Doctors Without Borders wins the Nobel Peace Prize", sortValue:1999.0},
+        {label:"The World Food Programme wins the Nobel Peace Prize", sortValue:2020.0},
+        {label:"The International Atomic Energy Agency wins the Nobel Peace Prize", sortValue:2005.0},
+        {label:"Wangari Maathai wins the Nobel Peace Prize", sortValue:2004.0},
+        {label:"Betty Williams and Mairead Corrigan win the Nobel Peace Prize", sortValue:1976.0},
+        {label:"Anwar Sadat and Menachem Begin share the Nobel Peace Prize", sortValue:1978.0},
+        {label:"Adolfo Pérez Esquivel wins the Nobel Peace Prize", sortValue:1980.0},
+        {label:"Oscar Arias Sánchez wins the Nobel Peace Prize", sortValue:1987.0},
+        {label:"Rigoberta Menchú wins the Nobel Peace Prize", sortValue:1992.0},
+        {label:"Shirin Ebadi wins the Nobel Peace Prize", sortValue:2003.0},
+        {label:"Liu Xiaobo wins the Nobel Peace Prize", sortValue:2010.0},
+        {label:"The Tunisian National Dialogue Quartet wins the Nobel Peace Prize", sortValue:2015.0}
+      ]
+    },
+    oscarsbestpicture: {
+      name:"Academy Awards", icon:"🏅",
+      prompt:"Arrange these Best Picture Oscar winners by the year they won.",
+      emojis:["🏅","🎥","🌟"],
+      items:[
+        {label:"Wings wins the first Best Picture Oscar", sortValue:1929.33},
+        {label:"It Happened One Night wins Best Picture", sortValue:1935.17},
+        {label:"Gone with the Wind wins Best Picture", sortValue:1940.17},
+        {label:"Casablanca wins Best Picture", sortValue:1944.25},
+        {label:"All About Eve wins Best Picture", sortValue:1951.25},
+        {label:"Ben-Hur wins Best Picture", sortValue:1960.33},
+        {label:"The Sound of Music wins Best Picture", sortValue:1966.33},
+        {label:"The Godfather wins Best Picture", sortValue:1973.25},
+        {label:"The Godfather Part II wins Best Picture", sortValue:1975.25},
+        {label:"Rocky wins Best Picture", sortValue:1977.25},
+        {label:"Annie Hall wins Best Picture", sortValue:1978.33},
+        {label:"Amadeus wins Best Picture", sortValue:1985.25},
+        {label:"Forrest Gump wins Best Picture", sortValue:1995.25},
+        {label:"Titanic wins Best Picture", sortValue:1998.25},
+        {label:"Gladiator wins Best Picture", sortValue:2001.25},
+        {label:"Chicago wins Best Picture", sortValue:2003.25},
+        {label:"Slumdog Millionaire wins Best Picture", sortValue:2009.08},
+        {label:"Argo wins Best Picture", sortValue:2013.17},
+        {label:"Moonlight wins Best Picture", sortValue:2017.17},
+        {label:"Green Book wins Best Picture", sortValue:2019.17},
+        {label:"Parasite wins Best Picture", sortValue:2020.08},
+        {label:"Everything Everywhere All at Once wins Best Picture", sortValue:2023.17},
+        {label:"Oppenheimer wins Best Picture", sortValue:2024.17},
+        {label:"No Country for Old Men wins Best Picture", sortValue:2008.08},
+        {label:"Spotlight wins Best Picture", sortValue:2016.08},
+        {label:"You Can't Take It with You wins Best Picture", sortValue:1939.17},
+        {label:"Rebecca wins Best Picture", sortValue:1941.17},
+        {label:"On the Waterfront wins Best Picture", sortValue:1955.25},
+        {label:"West Side Story wins Best Picture", sortValue:1962.33},
+        {label:"The Sting wins Best Picture", sortValue:1974.25},
+        {label:"Kramer vs. Kramer wins Best Picture", sortValue:1980.25},
+        {label:"Platoon wins Best Picture", sortValue:1987.25},
+        {label:"Schindler's List wins Best Picture", sortValue:1994.25},
+        {label:"The Shape of Water wins Best Picture", sortValue:2018.17}
+      ]
+    },
+    comicheroes: {
+      name:"Comic Book Heroes", icon:"🦸",
+      prompt:"Arrange these superheroes by the year they first appeared in comics.",
+      emojis:["🦸","💥","📖"],
+      items:[
+        {label:"Superman debuts", sortValue:1938.5},
+        {label:"Batman debuts", sortValue:1939.42},
+        {label:"Green Lantern debuts", sortValue:1940.5},
+        {label:"Captain America debuts", sortValue:1941.0},
+        {label:"Aquaman debuts", sortValue:1941.75},
+        {label:"Wonder Woman debuts", sortValue:1941.92},
+        {label:"The Fantastic Four debut", sortValue:1961.92},
+        {label:"The Hulk debuts", sortValue:1962.42},
+        {label:"Iron Man debuts", sortValue:1963.25},
+        {label:"Spider-Man debuts", sortValue:1962.67},
+        {label:"The X-Men debut", sortValue:1963.75},
+        {label:"Daredevil debuts", sortValue:1964.33},
+        {label:"Black Panther debuts", sortValue:1966.58},
+        {label:"The Punisher debuts", sortValue:1974.08},
+        {label:"Wolverine debuts", sortValue:1974.83},
+        {label:"Ghost Rider debuts", sortValue:1972.42},
+        {label:"Deadpool debuts", sortValue:1991.08},
+        {label:"Harley Quinn debuts", sortValue:1992.75},
+        {label:"Robin debuts", sortValue:1940.25},
+        {label:"The Flash (Barry Allen) debuts", sortValue:1956.75},
+        {label:"The Justice League debuts", sortValue:1960.17},
+        {label:"Thor debuts", sortValue:1962.58},
+        {label:"Doctor Strange debuts", sortValue:1963.58},
+        {label:"The Avengers debut in comics", sortValue:1963.76},
+        {label:"Black Widow debuts", sortValue:1964.34},
+        {label:"Silver Surfer debuts", sortValue:1966.17},
+        {label:"The Guardians of the Galaxy debut in comics", sortValue:1969.0},
+        {label:"Luke Cage debuts", sortValue:1972.5},
+        {label:"Blade debuts", sortValue:1973.5},
+        {label:"Storm debuts", sortValue:1975.42},
+        {label:"Rocket Raccoon debuts", sortValue:1976.42},
+        {label:"She-Hulk debuts", sortValue:1980.08},
+        {label:"Cable debuts", sortValue:1990.5},
+        {label:"Spawn debuts", sortValue:1992.42}
+      ]
+    },
+    worldleaders: {
+      name:"World Leaders", icon:"🌍",
+      prompt:"Arrange these world leaders by the year they took power.",
+      emojis:["🌍","🕊️","🏛️"],
+      items:[
+        {label:"Napoleon becomes Emperor of France", sortValue:1804.42},
+        {label:"Otto von Bismarck becomes Chancellor of Germany", sortValue:1871.33},
+        {label:"Vladimir Lenin comes to power in Russia", sortValue:1917.85},
+        {label:"Mahatma Gandhi leads the Salt March", sortValue:1930.25},
+        {label:"Winston Churchill becomes British Prime Minister", sortValue:1940.42},
+        {label:"Mao Zedong proclaims the People's Republic of China", sortValue:1949.75},
+        {label:"Fidel Castro becomes leader of Cuba", sortValue:1959.08},
+        {label:"Indira Gandhi becomes Prime Minister of India", sortValue:1966.08},
+        {label:"Golda Meir becomes Prime Minister of Israel", sortValue:1969.25},
+        {label:"Margaret Thatcher becomes British Prime Minister", sortValue:1979.33},
+        {label:"Mikhail Gorbachev becomes Soviet leader", sortValue:1985.25},
+        {label:"Nelson Mandela becomes President of South Africa", sortValue:1994.42},
+        {label:"Angela Merkel becomes Chancellor of Germany", sortValue:2005.92},
+        {label:"Xi Jinping becomes President of China", sortValue:2013.25},
+        {label:"Justin Trudeau becomes Prime Minister of Canada", sortValue:2015.83},
+        {label:"Queen Elizabeth II becomes Queen", sortValue:1952.08},
+        {label:"Deng Xiaoping begins economic reforms in China", sortValue:1978.92},
+        {label:"Vladimir Putin becomes President of Russia", sortValue:2000.42},
+        {label:"Julius Caesar becomes Dictator of Rome", sortValue:-49.0},
+        {label:"Augustus becomes the first Roman Emperor", sortValue:-27.0},
+        {label:"Charlemagne is crowned Holy Roman Emperor", sortValue:800.0},
+        {label:"William the Conqueror becomes King of England", sortValue:1066.5},
+        {label:"Peter the Great becomes Tsar of Russia", sortValue:1682.5},
+        {label:"Queen Victoria becomes Queen of the United Kingdom", sortValue:1837.5},
+        {label:"Kim Il Sung becomes leader of North Korea", sortValue:1948.75},
+        {label:"Charles de Gaulle becomes President of France", sortValue:1959.09},
+        {label:"Ayatollah Khomeini becomes Supreme Leader of Iran", sortValue:1979.17},
+        {label:"Saddam Hussein becomes President of Iraq", sortValue:1979.58},
+        {label:"Boris Yeltsin becomes President of Russia", sortValue:1991.5},
+        {label:"Tony Blair becomes British Prime Minister", sortValue:1997.42},
+        {label:"Emmanuel Macron becomes President of France", sortValue:2017.42},
+        {label:"Recep Tayyip Erdoğan becomes President of Turkey", sortValue:2014.58},
+        {label:"Volodymyr Zelenskyy becomes President of Ukraine", sortValue:2019.42}
+      ]
+    },
+    broadway: {
+      name:"Broadway Musicals", icon:"🎭",
+      prompt:"Arrange these musicals by the year they opened on Broadway.",
+      emojis:["🎭","🎶","✨"],
+      items:[
+        {label:"Show Boat opens on Broadway", sortValue:1927.92},
+        {label:"Oklahoma! opens on Broadway", sortValue:1943.25},
+        {label:"My Fair Lady opens on Broadway", sortValue:1956.25},
+        {label:"West Side Story opens on Broadway", sortValue:1957.75},
+        {label:"Hair opens on Broadway", sortValue:1968.33},
+        {label:"A Chorus Line opens on Broadway", sortValue:1975.42},
+        {label:"Chicago opens on Broadway", sortValue:1975.58},
+        {label:"Cats opens on Broadway", sortValue:1982.75},
+        {label:"Les Misérables opens on Broadway", sortValue:1987.17},
+        {label:"The Phantom of the Opera opens on Broadway", sortValue:1988.08},
+        {label:"Rent opens on Broadway", sortValue:1996.33},
+        {label:"The Lion King opens on Broadway", sortValue:1997.83},
+        {label:"Wicked opens on Broadway", sortValue:2003.83},
+        {label:"Jersey Boys opens on Broadway", sortValue:2005.92},
+        {label:"Hamilton opens on Broadway", sortValue:2015.67},
+        {label:"Dear Evan Hansen opens on Broadway", sortValue:2016.92},
+        {label:"Fiddler on the Roof opens on Broadway", sortValue:1964.75},
+        {label:"Grease opens on Broadway", sortValue:1972.17},
+        {label:"The Book of Mormon opens on Broadway", sortValue:2011.25},
+        {label:"Six the Musical opens on Broadway", sortValue:2021.83},
+        {label:"The Music Man opens on Broadway", sortValue:1957.92},
+        {label:"Pippin opens on Broadway", sortValue:1972.83},
+        {label:"Annie opens on Broadway", sortValue:1977.33},
+        {label:"Dreamgirls opens on Broadway", sortValue:1981.92},
+        {label:"Into the Woods opens on Broadway", sortValue:1987.83},
+        {label:"Miss Saigon opens on Broadway", sortValue:1991.33},
+        {label:"Beauty and the Beast opens on Broadway", sortValue:1994.33},
+        {label:"Ragtime opens on Broadway", sortValue:1998.0},
+        {label:"Mamma Mia! opens on Broadway", sortValue:2001.83},
+        {label:"Avenue Q opens on Broadway", sortValue:2003.5},
+        {label:"Spring Awakening opens on Broadway", sortValue:2006.92},
+        {label:"Legally Blonde opens on Broadway", sortValue:2007.33},
+        {label:"Kinky Boots opens on Broadway", sortValue:2013.33}
+      ]
+    },
+    transportation: {
+      name:"Transportation", icon:"🚂",
+      prompt:"Arrange these transportation milestones in the order they happened.",
+      emojis:["🚂","✈️","🚢"],
+      items:[
+        {label:"Powered airplane flight is achieved", sortValue:1903.92},
+        {label:"The first transatlantic flight is completed", sortValue:1919.5},
+        {label:"Charles Lindbergh completes the first solo transatlantic flight", sortValue:1927.42},
+        {label:"Amelia Earhart flies solo across the Atlantic", sortValue:1932.42},
+        {label:"The first commercial jet airliner enters service", sortValue:1952.42},
+        {label:"The Boeing 747 makes its first flight", sortValue:1969.08},
+        {label:"The Concorde enters commercial service", sortValue:1976.08},
+        {label:"SpaceShipOne wins the Ansari X Prize", sortValue:2004.83},
+        {label:"The Airbus A380 makes its first flight", sortValue:2005.33},
+        {label:"The first steam locomotive runs", sortValue:1804.5},
+        {label:"The Erie Canal opens", sortValue:1825.83},
+        {label:"The Orient Express begins service", sortValue:1883.83},
+        {label:"The first transcontinental railroad in the U.S. is completed", sortValue:1869.42},
+        {label:"The Trans-Siberian Railway is completed", sortValue:1916.5},
+        {label:"The Shinkansen (bullet train) begins service in Japan", sortValue:1964.83},
+        {label:"The QE2 ocean liner is launched", sortValue:1967.75},
+        {label:"The Eurotunnel (Channel Tunnel) opens", sortValue:1994.42}
+      ]
+    }
+  };
+  const CATEGORY_KEYS = Object.keys(CATEGORIES);
+
+  /* ============ DAILY PUZZLE BUILDER (never repeats vs. the previous day) ============ */
+  // `eligibleKeys` is the set of categories that still have >= 5 unused answer
+  // tiles remaining as of this date — retired (exhausted) categories are excluded
+  // upstream in buildPuzzle before this function ever sees them.
+  const categoryCache = {};
+  function categoriesForDate(dateStr, eligibleKeys){
+    if(categoryCache[dateStr]) return categoryCache[dateStr];
+
+    const rng = rngFromSeed(dateStr+"|cats");
+    const shuffled = seededShuffle(eligibleKeys, rng);
+    const top5 = shuffled.slice(0, Math.min(5, shuffled.length));
+    const tail = shuffled.slice(top5.length);
+
+    // The previous day's actual result is already resolved by the time we get
+    // here (buildPuzzle always walks chronologically forward), so just read it.
+    const prevDateStr = dateStrOf(new Date(new Date(dateStr+"T00:00:00").getTime() - 86400000));
+    const prevActual = new Set(categoryCache[prevDateStr] || []);
+
+    const finalCats = [];
+    const tailPointer = tail.slice();
+    for(const cat of top5){
+      if(prevActual.has(cat)){
+        const replaceIdx = tailPointer.findIndex(c => !prevActual.has(c));
+        if(replaceIdx !== -1){
+          finalCats.push(tailPointer[replaceIdx]);
+          tailPointer.splice(replaceIdx,1);
+          continue;
+        }
+      }
+      finalCats.push(cat);
+    }
+    categoryCache[dateStr] = finalCats;
+    return finalCats;
+  }
+
+  // Memoized + recursive, mirroring categoriesForDate: resolves every earlier day
+  // first so we always know exactly which individual answer tiles have already
+  // been used, for every category, ever.
+  //
+  // Guarantee: a specific answer (e.g. "Prisoner of Azkaban") is permanently
+  // retired from its category's pool the moment it's shown once — it can never
+  // be selected again. Once a category has fewer than 5 unused tiles left, the
+  // whole category stops being selected ("retires") rather than ever reusing an
+  // answer. This is a hard content ceiling for franchise categories in
+  // particular (Harry Potter only has 8 real films, Star Wars 11, etc.) — once
+  // exhausted, that category won't reappear until more real entries exist to
+  // add (e.g. a new film releases) and are added to its pool.
+  const puzzleCache = {};
+  const categoryUsedLabels = {}; // catKey -> Set of item labels already used, ever
+
+  // Chooses 5 items from a category's remaining unused pool for a given
+  // difficulty target. Harder rounds prefer a contiguous run of chronologically
+  // adjacent items (small year-gaps = trickier ordering); easier rounds spread
+  // picks out across the whole remaining pool (big year-gaps = more obvious
+  // ordering). `fullSorted` is used only as a last-resort fallback so the game
+  // never breaks even in the distant edge case where every category is retired.
+  function pickItemsForDifficulty(unusedSorted, fullSorted, target, dateStr, catKey, i){
+    const rng = rngFromSeed(dateStr+"|"+catKey+"|"+i+"|pick");
+    let pool = unusedSorted;
+    if(pool.length < 5){
+      const usedLabels = new Set(pool.map(it => it.label));
+      const extra = fullSorted.filter(it => !usedLabels.has(it.label));
+      pool = pool.concat(extra).sort((a,b) => a.sortValue - b.sortValue);
+    }
+    const n = pool.length;
+    if(n <= 5) return pool.slice(0,5);
+
+    const t = Math.min(1, Math.max(0, (target - 1) / 4.8));
+    if(t > 0.7){
+      const maxStart = n - 5;
+      const start = Math.floor(rng() * (maxStart + 1));
+      return pool.slice(start, start+5);
+    }
+    const indices = [];
+    const bucketSize = n / 5;
+    for(let b=0; b<5; b++){
+      const lo = Math.floor(b*bucketSize);
+      const hi = Math.max(lo, Math.floor((b+1)*bucketSize) - 1);
+      indices.push(Math.min(lo + Math.floor(rng()*(hi-lo+1)), n-1));
+    }
+    const uniqueIndices = [...new Set(indices)];
+    let guard = 0;
+    while(uniqueIndices.length < 5 && guard < 50){
+      const candidate = Math.floor(rng()*n);
+      if(!uniqueIndices.includes(candidate)) uniqueIndices.push(candidate);
+      guard++;
+    }
+    return uniqueIndices.slice(0,5).sort((a,b)=>a-b).map(idx => pool[idx]);
+  }
+
+  function buildPuzzle(dateStr){
+    if(puzzleCache[dateStr]) return puzzleCache[dateStr];
+
+    if(dateStr > LAUNCH_DATE){
+      const prevDateStr = dateStrOf(new Date(new Date(dateStr+"T00:00:00").getTime() - 86400000));
+      buildPuzzle(prevDateStr); // resolve chronologically so categoryUsedLabels is up to date
+    }
+
+    let eligible = CATEGORY_KEYS.filter(k => {
+      const used = categoryUsedLabels[k] || new Set();
+      return (CATEGORIES[k].items.length - used.size) >= 5;
+    });
+    if(eligible.length < 5) eligible = CATEGORY_KEYS.slice(); // last-resort fallback; see note above
+
+    const cats = categoriesForDate(dateStr, eligible);
+    const rounds = cats.map((catKey, i) => {
+      const target = 1 + i*1.2;
+      const cat = CATEGORIES[catKey];
+      const used = categoryUsedLabels[catKey] || new Set();
+      const unusedSorted = cat.items.filter(it => !used.has(it.label)).sort((a,b) => a.sortValue - b.sortValue);
+      const fullSorted = cat.items.slice().sort((a,b) => a.sortValue - b.sortValue);
+
+      const chosen = pickItemsForDifficulty(unusedSorted, fullSorted, target, dateStr, catKey, i);
+
+      if(!categoryUsedLabels[catKey]) categoryUsedLabels[catKey] = new Set();
+      chosen.forEach(it => categoryUsedLabels[catKey].add(it.label));
+
+      const tileRng = rngFromSeed(dateStr+"|"+catKey+"|"+i+"|tiles");
+      const items = seededShuffle(chosen, tileRng);
+      return { categoryKey: catKey, items };
+    });
+
+    puzzleCache[dateStr] = rounds;
+    return rounds;
+  }
+
+  /* ============ STATE ============ */
+  const TOTAL_ROUNDS = 5;
+  const MAX_LIVES = 7;
+  const STORAGE_KEY = "flashpoint_daily_results_v1";
+
+  let state = null;
+
+  function loadResults(){
+    try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+    catch(e){ return {}; }
+  }
+  function saveResult(dateStr, result){
+    const all = loadResults();
+    all[dateStr] = result;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+  }
+
+  function newState(dateStr){
+    return {
+      dateStr,
+      rounds: buildPuzzle(dateStr),
+      currentRound: 0,
+      lives: MAX_LIVES,
+      roundMistakes: [0,0,0,0,0],
+      roundCompleted: [false,false,false,false,false],
+      solvedRounds: [null,null,null,null,null],
+      lastCompletedCategory: null,
+      startTime: Date.now(),
+      elapsedMs: 0,
+      finished: false,
+      won: false,
+      timerHandle: null
+    };
+  }
+
+  /* ============ DOM refs ============ */
+  const $ = (id) => document.getElementById(id);
+  const puzzleNoEl = $("puzzleNo");
+  const livesRow = $("livesRow");
+  const roundStat = $("roundStat");
+  const timerStat = $("timerStat");
+  const categoryPill = $("categoryPill");
+  const promptText = $("promptText");
+  const slotsEl = $("slots");
+  const trayEl = $("tray");
+  const railFill = $("railFill");
+  const submitBtn = $("submitBtn");
+  const resetRoundBtn = $("resetRoundBtn");
+  const resultOverlay = $("resultOverlay");
+  const archiveOverlay = $("archiveOverlay");
+  const infoOverlay = $("infoOverlay");
+  const toastEl = $("toast");
+
+  /* ============ RENDER ============ */
+  function fmtTime(ms){
+    const totalSec = Math.floor(ms/1000);
+    const m = String(Math.floor(totalSec/60)).padStart(2,'0');
+    const s = String(totalSec%60).padStart(2,'0');
+    return `${m}:${s}`;
+  }
+
+  function renderLives(){
+    livesRow.innerHTML = "";
+    const mistakesUsed = MAX_LIVES - state.lives;
+    for(let i=0;i<MAX_LIVES;i++){
+      const span = document.createElement('span');
+      if(i < mistakesUsed) span.classList.add('used');
+      livesRow.appendChild(span);
+    }
+  }
+
+  function renderStatus(){
+    roundStat.textContent = `${Math.min(state.currentRound+1,TOTAL_ROUNDS)}/${TOTAL_ROUNDS}`;
+    puzzleNoEl.textContent = "#"+String(puzzleNumber(state.dateStr)).padStart(3,'0');
+  }
+
+  function updateRailFill(){
+    const filledCount = [...slotsEl.children].filter(s => s.querySelector('.tile')).length;
+    railFill.style.height = (filledCount/5*100)+"%";
+  }
+
+  function tickTimer(){
+    if(state.finished) return;
+    state.elapsedMs = Date.now() - state.startTime;
+    timerStat.textContent = fmtTime(state.elapsedMs);
+  }
+
+  function makeTileEl(item, idx, roundIdx){
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    tile.dataset.idx = idx;
+    tile.dataset.round = roundIdx;
+    const labelSpan = document.createElement('span');
+    labelSpan.textContent = item.label;
+    tile.appendChild(labelSpan);
+    const yearSpan = document.createElement('span');
+    yearSpan.className = 'year-reveal';
+    yearSpan.textContent = "· "+Math.floor(item.sortValue);
+    tile.appendChild(yearSpan);
+    makeDraggable(tile);
+    return tile;
+  }
+
+  function loadRound(i){
+    // safety: remove any tiles/placeholders stranded on <body> from a previous round
+    document.querySelectorAll('body > .tile, body > .tile-placeholder').forEach(el => el.remove());
+    disarmWatchdog();
+    removeWindowDragListeners();
+    dragState = null;
+
+    const round = state.rounds[i];
+    const cat = CATEGORIES[round.categoryKey];
+
+    categoryPill.textContent = `${cat.icon} ${cat.name}`;
+    promptText.innerHTML = `${cat.prompt} <span class="muted">Round ${i+1} of ${TOTAL_ROUNDS}.</span>`;
+    railFill.style.height = "0%";
+    railFill.classList.remove('success');
+
+    slotsEl.innerHTML = "";
+    const ords = ["1","2","3","4","5"];
+    for(let s=0;s<5;s++){
+      const slot = document.createElement('div');
+      slot.className = 'slot';
+      slot.dataset.ordNum = ords[s];
+      slot.dataset.index = s;
+      const hint = document.createElement('span');
+      hint.className = 'empty-hint';
+      hint.textContent = 'drop here';
+      slot.appendChild(hint);
+      slotsEl.appendChild(slot);
+    }
+
+    trayEl.innerHTML = "";
+    round.items.forEach((item, idx) => {
+      trayEl.appendChild(makeTileEl(item, idx, i));
+    });
+
+    renderStatus();
+    updateSubmitState();
+  }
+
+  /* ============ DRAG & DROP ============ */
+  // Architecture note: earlier versions tracked the pointer via listeners on the
+  // tile itself plus setPointerCapture(). Under a fast flick, the tile (which is
+  // reparented to <body> and follows the pointer) can visually lag the real
+  // finger position by a frame, and pointer capture doesn't reliably survive
+  // that reparenting on every browser/webview — so move/up events could be
+  // dropped instead of reaching the tile, leaving it stranded mid-air.
+  //
+  // Fix: track the drag with listeners on `window` instead, which always
+  // receives the events regardless of capture or which element is currently
+  // hit-tested underneath the pointer. Drop-target detection uses geometric
+  // bounding-box checks instead of elementFromPoint, and a watchdog timer
+  // guarantees the drag is force-released if no move/up event arrives for a
+  // few seconds, no matter the cause.
+  let dragState = null;
+  let dragWatchdogId = null;
+
+  function armWatchdog(){
+    clearTimeout(dragWatchdogId);
+    dragWatchdogId = setTimeout(() => { if(dragState) cancelActiveDrag(); }, 4000);
+  }
+  function disarmWatchdog(){
+    clearTimeout(dragWatchdogId);
+    dragWatchdogId = null;
+  }
+
+  function makePlaceholder(tile){
+    const ph = document.createElement('div');
+    ph.className = 'tile-placeholder';
+    const rect = tile.getBoundingClientRect();
+    ph.style.height = rect.height+'px';
+    return ph;
+  }
+
+  function addWindowDragListeners(){
+    window.addEventListener('pointermove', onWindowPointerMove, { passive:false });
+    window.addEventListener('pointerup', onWindowPointerUp, { passive:false });
+    window.addEventListener('pointercancel', onWindowPointerCancel, { passive:false });
+  }
+  function removeWindowDragListeners(){
+    window.removeEventListener('pointermove', onWindowPointerMove);
+    window.removeEventListener('pointerup', onWindowPointerUp);
+    window.removeEventListener('pointercancel', onWindowPointerCancel);
+  }
+
+  const TAP_MOVE_THRESHOLD = 6; // px
+  const TAP_MAX_DURATION = 600; // ms
+
+  function onWindowPointerMove(e){
+    if(!dragState) return;
+    if(dragState.pointerId !== undefined && e.pointerId !== dragState.pointerId) return;
+    e.preventDefault();
+    armWatchdog();
+    const tile = dragState.tile;
+    const w = tile.offsetWidth, h = tile.offsetHeight;
+    let left = e.clientX - dragState.offsetX;
+    let top = e.clientY - dragState.offsetY;
+    left = Math.max(4, Math.min(left, window.innerWidth - w - 4));
+    top = Math.max(4, Math.min(top, window.innerHeight - h - 4));
+    tile.style.left = left + 'px';
+    tile.style.top = top + 'px';
+  }
+  function onWindowPointerUp(e){
+    if(!dragState) return;
+    if(dragState.pointerId !== undefined && e.pointerId !== dragState.pointerId) return;
+    const dx = e.clientX - dragState.startX;
+    const dy = e.clientY - dragState.startY;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const elapsed = Date.now() - dragState.startTime;
+    if(dist < TAP_MOVE_THRESHOLD && elapsed < TAP_MAX_DURATION){
+      finishTap();
+    } else {
+      finishDrop(e.clientX, e.clientY);
+    }
+  }
+  function onWindowPointerCancel(e){
+    if(!dragState) return;
+    if(dragState.pointerId !== undefined && e.pointerId !== dragState.pointerId) return;
+    cancelActiveDrag();
+  }
+
+  // Pure geometric hit-test against live bounding boxes — doesn't depend on
+  // elementFromPoint, z-order, or pointer-events toggling.
+  function hitTestDrop(clientX, clientY){
+    for(const slot of slotsEl.children){
+      const r = slot.getBoundingClientRect();
+      if(clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom){
+        return { type:'slot', el: slot };
+      }
+    }
+    const tr = trayEl.getBoundingClientRect();
+    if(clientX >= tr.left && clientX <= tr.right && clientY >= tr.top && clientY <= tr.bottom){
+      return { type:'tray', el: trayEl };
+    }
+    return null;
+  }
+
+  // FLIP-technique slide: pass the element's bounding rect from *before* it
+  // moved in the DOM, and it smoothly animates from there to its new spot.
+  function flipAnimate(el, beforeRect){
+    const afterRect = el.getBoundingClientRect();
+    const dx = beforeRect.left - afterRect.left;
+    const dy = beforeRect.top - afterRect.top;
+    if(!dx && !dy) return;
+    el.style.transition = 'none';
+    el.style.transform = `translate(${dx}px, ${dy}px)`;
+    void el.offsetWidth; // force reflow so the starting transform actually applies
+    requestAnimationFrame(() => {
+      el.style.transition = 'transform .32s cubic-bezier(.34,1.15,.64,1)';
+      el.style.transform = '';
+    });
+    const cleanup = () => {
+      el.style.transition = '';
+      el.style.transform = '';
+      el.removeEventListener('transitionend', cleanup);
+    };
+    el.addEventListener('transitionend', cleanup);
+  }
+
+  // Briefly rings both tiles involved in a swap so it's obvious which two moved.
+  function pulseSwap(el){
+    el.classList.remove('swap-pulse');
+    void el.offsetWidth;
+    el.classList.add('swap-pulse');
+    setTimeout(() => el.classList.remove('swap-pulse'), 650);
+  }
+
+  function finishDrop(clientX, clientY){
+    if(!dragState) return;
+    const { tile, placeholder, sourceParent } = dragState;
+    disarmWatchdog();
+    removeWindowDragListeners();
+
+    const hit = hitTestDrop(clientX, clientY);
+
+    cleanupTileStyle(tile);
+    document.body.classList.remove('dragging-active');
+    if(placeholder && placeholder.parentElement){
+      placeholder.parentElement.removeChild(placeholder);
+    }
+
+    let swapped = false;
+
+    if(hit && hit.type === 'slot'){
+      const slot = hit.el;
+      const existing = slot.querySelector('.tile');
+      if(existing && existing !== tile){
+        const beforeRect = existing.getBoundingClientRect();
+        sourceParent.appendChild(existing);
+        flipAnimate(existing, beforeRect);
+        pulseSwap(existing);
+        swapped = true;
+      }
+      const emptyHint = slot.querySelector('.empty-hint');
+      if(emptyHint) emptyHint.remove();
+      slot.appendChild(tile);
+    } else if(hit && hit.type === 'tray'){
+      trayEl.appendChild(tile);
+    } else {
+      sourceParent.appendChild(tile);
+    }
+
+    if(swapped) pulseSwap(tile);
+
+    refreshSlotFilledStates();
+    dragState = null;
+    updateSubmitState();
+  }
+
+  // Tap (as opposed to drag) shortcut: tapping a tray tile drops it into the
+  // earliest open slot; tapping an already-placed tile sends it back to the tray.
+  function finishTap(){
+    const { tile, placeholder, sourceParent } = dragState;
+    disarmWatchdog();
+    removeWindowDragListeners();
+    document.body.classList.remove('dragging-active');
+
+    const cameFromTray = sourceParent === trayEl;
+    const beforeRect = tile.getBoundingClientRect();
+
+    cleanupTileStyle(tile);
+    if(placeholder && placeholder.parentElement){
+      placeholder.parentElement.removeChild(placeholder);
+    }
+
+    if(cameFromTray){
+      const targetSlot = [...slotsEl.children].find(s => !s.querySelector('.tile'));
+      if(targetSlot){
+        const emptyHint = targetSlot.querySelector('.empty-hint');
+        if(emptyHint) emptyHint.remove();
+        targetSlot.appendChild(tile);
+        flipAnimate(tile, beforeRect);
+      } else {
+        sourceParent.appendChild(tile);
+      }
+    } else {
+      // tapped a tile that was sitting in a slot — send it back to the tray
+      trayEl.appendChild(tile);
+      flipAnimate(tile, beforeRect);
+    }
+
+    refreshSlotFilledStates();
+    dragState = null;
+    updateSubmitState();
+  }
+
+  function cancelActiveDrag(){
+    if(!dragState) return;
+    const { tile, placeholder } = dragState;
+    disarmWatchdog();
+    removeWindowDragListeners();
+    cleanupTileStyle(tile);
+    document.body.classList.remove('dragging-active');
+    if(placeholder && placeholder.parentElement){
+      placeholder.parentElement.replaceChild(tile, placeholder);
+    } else if(dragState.sourceParent){
+      dragState.sourceParent.appendChild(tile);
+    }
+    dragState = null;
+    refreshSlotFilledStates();
+    updateSubmitState();
+  }
+
+  function makeDraggable(tile){
+    tile.addEventListener('pointerdown', (e) => {
+      if(state.finished) return;
+      if(e.isPrimary === false) return; // ignore secondary touch points during a fast multi-touch flick
+      if(dragState) cancelActiveDrag(); // finalize any stale drag before starting a new one
+      e.preventDefault();
+
+      const rect = tile.getBoundingClientRect();
+      const sourceParent = tile.parentElement;
+      const placeholder = makePlaceholder(tile);
+      sourceParent.replaceChild(placeholder, tile);
+
+      dragState = {
+        tile,
+        pointerId: e.pointerId,
+        sourceParent,
+        placeholder,
+        offsetX: e.clientX - rect.left,
+        offsetY: e.clientY - rect.top,
+        startX: e.clientX,
+        startY: e.clientY,
+        startTime: Date.now()
+      };
+      document.body.classList.add('dragging-active');
+      tile.classList.add('dragging');
+      document.body.appendChild(tile);
+      tile.style.position = 'fixed';
+      tile.style.width = rect.width+'px';
+      tile.style.left = rect.left+'px';
+      tile.style.top = rect.top+'px';
+      tile.style.zIndex = 1000;
+
+      addWindowDragListeners();
+      armWatchdog();
+    });
+  }
+
+  // Extra failsafes: if the app is backgrounded or focus is lost mid-drag,
+  // don't leave a tile stranded — snap it back automatically.
+  window.addEventListener('blur', () => cancelActiveDrag());
+  document.addEventListener('visibilitychange', () => { if(document.hidden) cancelActiveDrag(); });
+
+  function cleanupTileStyle(tile){
+    tile.classList.remove('dragging');
+    tile.style.position = '';
+    tile.style.left = '';
+    tile.style.top = '';
+    tile.style.width = '';
+    tile.style.zIndex = '';
+    tile.style.pointerEvents = '';
+    tile.style.transform = '';
+    tile.style.transition = '';
+  }
+
+  function refreshSlotFilledStates(){
+    [...slotsEl.children].forEach(slot => {
+      const hasTile = !!slot.querySelector('.tile');
+      slot.classList.toggle('filled', hasTile);
+      if(hasTile){
+        const hint = slot.querySelector('.empty-hint');
+        if(hint) hint.remove();
+      } else if(!slot.querySelector('.empty-hint')){
+        const hint = document.createElement('span');
+        hint.className = 'empty-hint';
+        hint.textContent = 'drop here';
+        slot.appendChild(hint);
+      }
+    });
+    updateRailFill();
+  }
+
+  function updateSubmitState(){
+    const filled = [...slotsEl.children].every(s => s.querySelector('.tile'));
+    submitBtn.disabled = !filled || state.finished;
+  }
+
+  resetRoundBtn.addEventListener('click', () => {
+    if(state.finished) return;
+    cancelActiveDrag();
+    // robust recovery: gather every tile/placeholder belonging to this round from
+    // anywhere in the document (including any stuck on <body>) and restore them to the tray.
+    const roundIdx = state.currentRound;
+    document.querySelectorAll('.tile-placeholder').forEach(ph => ph.remove());
+    document.querySelectorAll(`.tile[data-round="${roundIdx}"]`).forEach(tile => {
+      cleanupTileStyle(tile);
+      tile.classList.remove('revealed','pop','swap-pulse');
+      trayEl.appendChild(tile);
+    });
+    slotsEl.querySelectorAll('.slot').forEach(s => s.classList.remove('correct','wrong'));
+    railFill.classList.remove('success');
+    refreshSlotFilledStates();
+    updateSubmitState();
+  });
+
+  /* ============ SUBMIT / SCORING ============ */
+  function checkAnswer(){
+    const slots = [...slotsEl.children];
+    const round = state.rounds[state.currentRound];
+    const correctOrder = round.items
+      .map((_, idx) => idx)
+      .sort((a,b) => round.items[a].sortValue - round.items[b].sortValue);
+    const placedOrder = slots.map(s => Number(s.querySelector('.tile').dataset.idx));
+    const isCorrect = placedOrder.every((v,i) => v === correctOrder[i]);
+    return { isCorrect, slots, correctOrder };
+  }
+
+  function shakeScreen(){
+    const appEl = $("app");
+    appEl.classList.remove('shake');
+    void appEl.offsetWidth;
+    appEl.classList.add('shake');
+  }
+
+  submitBtn.addEventListener('click', () => {
+    if(state.finished) return;
+    const { isCorrect, slots, correctOrder } = checkAnswer();
+    const round = state.rounds[state.currentRound];
+
+    if(isCorrect){
+      slots.forEach(s => s.classList.add('correct'));
+      railFill.style.height = "100%";
+      railFill.classList.add('success');
+      slots.forEach(s => {
+        const t = s.querySelector('.tile');
+        t.classList.add('revealed');
+        t.classList.add('pop');
+      });
+      state.roundCompleted[state.currentRound] = true;
+      state.lastCompletedCategory = round.categoryKey;
+      state.solvedRounds[state.currentRound] = correctOrder.map(idx => ({
+        label: round.items[idx].label,
+        year: Math.floor(round.items[idx].sortValue)
+      }));
+      submitBtn.disabled = true;
+      setTimeout(() => {
+        if(state.currentRound < TOTAL_ROUNDS-1){
+          state.currentRound++;
+          loadRound(state.currentRound);
+        } else {
+          endGame(true);
+        }
+      }, 1100);
+    } else {
+      slots.forEach((s,i) => {
+        const t = s.querySelector('.tile');
+        const idx = Number(t.dataset.idx);
+        s.classList.add(idx === correctOrder[i] ? 'correct' : 'wrong');
+      });
+      shakeScreen();
+      state.roundMistakes[state.currentRound]++;
+      state.lives--;
+      renderLives();
+      setTimeout(() => {
+        slots.forEach(s => s.classList.remove('correct','wrong'));
+      }, 650);
+      if(state.lives <= 0){
+        submitBtn.disabled = true;
+        setTimeout(() => endGame(false), 700);
+      }
+    }
+  });
+
+  /* ============ END GAME / RESULTS ============ */
+  function computeEmojiGrid(finalState){
+    const themeKey = finalState.lastCompletedCategory || finalState.categories[0];
+    const theme = CATEGORIES[themeKey];
+    const emojis = finalState.categories.map((catKey, i) => {
+      if(!finalState.roundCompleted[i]) return "⬛";
+      const m = finalState.roundMistakes[i];
+      const tier = m === 0 ? 0 : (m <= 2 ? 1 : 2);
+      return theme.emojis[tier];
+    });
+    return { emojis, theme };
+  }
+
+  function endGame(won){
+    state.finished = true;
+    state.won = won;
+    if(state.timerHandle) clearInterval(state.timerHandle);
+    state.elapsedMs = Date.now() - state.startTime;
+
+    const roundsCompleted = state.roundCompleted.filter(Boolean).length;
+    const result = {
+      dateStr: state.dateStr,
+      roundsCompleted,
+      totalRounds: TOTAL_ROUNDS,
+      roundMistakes: state.roundMistakes,
+      roundCompleted: state.roundCompleted,
+      solvedRounds: state.solvedRounds,
+      categories: state.rounds.map(r => r.categoryKey),
+      livesLeft: state.lives,
+      timeMs: state.elapsedMs,
+      won,
+      lastCompletedCategory: state.lastCompletedCategory
+    };
+    saveResult(state.dateStr, result);
+    showResultScreen(result);
+  }
+
+  function renderReview(result){
+    const panel = $("reviewPanel");
+    panel.innerHTML = "";
+    const solved = result.solvedRounds || [];
+    let any = false;
+    result.categories.forEach((catKey, i) => {
+      const items = solved[i];
+      if(!items) return;
+      any = true;
+      const cat = CATEGORIES[catKey];
+      const div = document.createElement('div');
+      div.className = 'review-round';
+      const head = document.createElement('div');
+      head.className = 'rr-head';
+      head.textContent = `${cat.icon} ${cat.name}`;
+      div.appendChild(head);
+      const itemsWrap = document.createElement('div');
+      itemsWrap.className = 'rr-items';
+      items.forEach(it => {
+        const row = document.createElement('div');
+        row.className = 'review-item';
+        row.innerHTML = `<b>${it.label}</b><span class="yr">${it.year}</span>`;
+        itemsWrap.appendChild(row);
+      });
+      div.appendChild(itemsWrap);
+      panel.appendChild(div);
+    });
+    if(!any){
+      panel.innerHTML = '<div class="review-empty">No rounds were completed this session.</div>';
+    }
+  }
+
+  function showResultScreen(result){
+    const { emojis } = computeEmojiGrid(result);
+
+    $("resultHeadline").textContent = result.won ? "🏆" : "⏳";
+    $("resultTitle").textContent = result.won ? "Puzzle complete!" : "Out of lives";
+    $("resultSub").textContent = result.won
+      ? `You solved all ${result.totalRounds} rounds.`
+      : `You made it through ${result.roundsCompleted} of ${result.totalRounds} rounds.`;
+    $("resultGrid").textContent = emojis.join(" ");
+    $("statRounds").textContent = `${result.roundsCompleted}/${result.totalRounds}`;
+    $("statLives").textContent = result.livesLeft;
+    $("statTime").textContent = fmtTime(result.timeMs);
+
+    renderReview(result);
+
+    resultOverlay.dataset.puzzleNum = puzzleNumber(result.dateStr);
+    resultOverlay.dataset.emojis = emojis.join(" ");
+    resultOverlay.dataset.rounds = `${result.roundsCompleted}/${result.totalRounds}`;
+    resultOverlay.dataset.lives = result.livesLeft;
+    resultOverlay.dataset.time = fmtTime(result.timeMs);
+
+    openOverlay(resultOverlay);
+  }
+
+  $("shareBtn").addEventListener('click', () => {
+    const d = resultOverlay.dataset;
+    const text = `Flashpoint #${d.puzzleNum} — ${d.rounds} rounds\n${d.emojis}\n❤️ x${d.lives}   ⏱ ${d.time}`;
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(showToast).catch(() => fallbackCopy(text));
+    } else {
+      fallbackCopy(text);
+    }
+  });
+
+  function fallbackCopy(text){
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand('copy'); showToast(); }catch(e){}
+    document.body.removeChild(ta);
+  }
+
+  function showToast(){
+    toastEl.textContent = "Copied to clipboard!";
+    toastEl.classList.add('show');
+    setTimeout(() => toastEl.classList.remove('show'), 1800);
+  }
+
+  /* ============ OVERLAY HELPERS ============ */
+  function openOverlay(el){ el.classList.add('show'); }
+  function closeOverlay(el){ el.classList.remove('show'); }
+
+  $("closeResultBtn").addEventListener('click', () => closeOverlay(resultOverlay));
+  $("infoBtn").addEventListener('click', () => openOverlay(infoOverlay));
+  $("closeInfoBtn").addEventListener('click', () => closeOverlay(infoOverlay));
+  $("archiveBtn").addEventListener('click', () => { renderArchive(); openOverlay(archiveOverlay); });
+  $("closeArchiveBtn").addEventListener('click', () => closeOverlay(archiveOverlay));
+  [resultOverlay, archiveOverlay, infoOverlay].forEach(ov => {
+    ov.addEventListener('click', (e) => { if(e.target === ov) closeOverlay(ov); });
+  });
+
+  /* ============ ARCHIVE ============ */
+  function renderArchive(){
+    const list = $("archiveList");
+    list.innerHTML = "";
+    const results = loadResults();
+    const start = new Date(LAUNCH_DATE+"T00:00:00");
+    const end = new Date(todayStr()+"T00:00:00");
+    const days = [];
+    for(let d = new Date(end); d >= start; d.setDate(d.getDate()-1)){
+      days.push(dateStrOf(d));
+    }
+    days.forEach(ds => {
+      const row = document.createElement('div');
+      row.className = 'archive-row';
+      const res = results[ds];
+      const dObj = new Date(ds+"T00:00:00");
+      const label = dObj.toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' });
+      row.innerHTML = `
+        <div class="d">
+          <span class="date">${label}${ds===todayStr() ? " (today)" : ""}</span>
+          <span class="num">Puzzle #${String(puzzleNumber(ds)).padStart(3,'0')}</span>
+        </div>
+        <span class="status">${res ? (res.won ? "✅" : "🔺") : "▫️"}</span>
+      `;
+      row.addEventListener('click', () => {
+        closeOverlay(archiveOverlay);
+        goToDate(ds);
+      });
+      list.appendChild(row);
+    });
+  }
+
+  /* ============ GAME BOOT / NAVIGATION ============ */
+  function goToDate(dateStr){
+    if(state && state.timerHandle) clearInterval(state.timerHandle);
+    disarmWatchdog();
+    removeWindowDragListeners();
+    dragState = null;
+    const results = loadResults();
+    const existing = results[dateStr];
+
+    if(existing){
+      state = newState(dateStr);
+      state.finished = true;
+      state.currentRound = existing.roundsCompleted;
+      state.lives = existing.livesLeft;
+      state.roundMistakes = existing.roundMistakes;
+      state.roundCompleted = existing.roundCompleted;
+      state.solvedRounds = existing.solvedRounds || [null,null,null,null,null];
+      state.lastCompletedCategory = existing.lastCompletedCategory;
+      state.elapsedMs = existing.timeMs;
+      renderStatus();
+      renderLives();
+      timerStat.textContent = fmtTime(existing.timeMs);
+      loadRound(Math.min(existing.roundsCompleted, TOTAL_ROUNDS-1));
+      showResultScreen(existing);
+      return;
+    }
+
+    state = newState(dateStr);
+    renderLives();
+    renderStatus();
+    loadRound(0);
+    timerStat.textContent = "00:00";
+    state.timerHandle = setInterval(tickTimer, 250);
+    closeOverlay(resultOverlay);
+  }
+
+  goToDate(todayStr());
+
+})();
+</script>
+</body>
+</html>
